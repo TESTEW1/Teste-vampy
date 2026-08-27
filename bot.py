@@ -119,6 +119,26 @@ _RESP_VAI_APRONTAR = [
     "*sorri misteriosa* isso é surpresa!! fica de olho 👀🦇",
 ]
 
+# respostas pra elogios (fofa, bonita, linda etc.) — ela fica tímida
+_RESP_ELOGIO = [
+    "*fica vermelha* pa-para de me elogiar assim... 🦇💜😳",
+    "eu?? *esconde o rosto atrás da asinha* ai que vergonha... 🦇🖤",
+    "*mexe na asinha sem graça* o-obrigada... não precisava... 🦇💜",
+    "*ri baixinho, envergonhada* pára, você tá me deixando sem graça 🦇✨",
+    "ai... *voa rapidinho pra se esconder um pouco* obrigada mesmo... 🦇🖤",
+    "*sorri tímida, olhando pro chão* isso me deixou toda boba agora 🦇💜",
+    "*se enrola na própria asa de vergonha* ...obrigada 🦇🖤😳",
+]
+
+# respostas pra "você gosta de brincar? / vamos brincar" (reaproveitadas)
+_RESP_GOSTA_BRINCAR = [
+    "AMO brincar!! principalmente pregar peça em alguém 😈🦇",
+    "com certeza!! bora, o que a gente vai aprontar?? 😈🦇✨",
+    "eu vivo pra isso!! sempre pronta pra uma brincadeira 🦇🖤",
+    "óbvio que sim!! só me diz o que vamos fazer 😈🦇",
+    "*bate as asinhas animada* SIM!! vamos, vamos!! 🦇✨",
+]
+
 _RESPOSTAS_SEED = {
 
     # ── Bom dia ──────────────────────────────────────────────────
@@ -280,6 +300,32 @@ _RESPOSTAS_SEED = {
     "o que você vai aprontar": _RESP_VAI_APRONTAR,
     "que arte vc vai fazer": _RESP_VAI_APRONTAR,
     "que arte você vai fazer": _RESP_VAI_APRONTAR,
+
+    # ── Elogios (fofa, bonita, linda etc.) — ela fica tímida ─────
+    "fofa": _RESP_ELOGIO,
+    "fofo": _RESP_ELOGIO,
+    "fofinha": _RESP_ELOGIO,
+    "fofinho": _RESP_ELOGIO,
+    "bonita": _RESP_ELOGIO,
+    "bonito": _RESP_ELOGIO,
+    "linda": _RESP_ELOGIO,
+    "lindo": _RESP_ELOGIO,
+    "maravilhosa": _RESP_ELOGIO,
+    "maravilhoso": _RESP_ELOGIO,
+    "perfeita": _RESP_ELOGIO,
+    "perfeito": _RESP_ELOGIO,
+    "incrível": _RESP_ELOGIO,
+    "adorável": _RESP_ELOGIO,
+    "gracinha": _RESP_ELOGIO,
+
+    # ── Gosta de brincar / vamos brincar ─────────────────────────
+    "gosta de brincar": _RESP_GOSTA_BRINCAR,
+    "gosta de brincadeira": _RESP_GOSTA_BRINCAR,
+    "vamos brincar": _RESP_GOSTA_BRINCAR,
+    "vamo brincar": _RESP_GOSTA_BRINCAR,
+    "quer brincar": _RESP_GOSTA_BRINCAR,
+    "bora brincar": _RESP_GOSTA_BRINCAR,
+    "topa brincar": _RESP_GOSTA_BRINCAR,
 
     # ── Obrigado(a) ──────────────────────────────────────────────
     "obrigad": [
