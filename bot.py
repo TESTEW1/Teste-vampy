@@ -492,6 +492,19 @@ _RESPOSTAS_SEED = {
     ],
 }
 
+# CORREÇÃO: chaves de elogio ("fofa", "linda", "lindo" etc.) só podem
+# disparar quando a Vampy for citada de verdade na mensagem (nome dela
+# no texto ou @menção real) — nunca pela chance aleatória de 25% que
+# os outros gatilhos genéricos usam. Sem isso, uma frase qualquer tipo
+# "que dia lindo né gente" (falando do dia, não dela) podia sortear a
+# resposta tímida de elogio como se alguém tivesse elogiado ela, o que
+# não faz sentido nenhum
+_CHAVES_EXIGEM_CITACAO = {
+    "fofa", "fofo", "fofinha", "fofinho", "bonita", "bonito", "linda",
+    "lindo", "maravilhosa", "maravilhoso", "perfeita", "perfeito",
+    "incrível", "adorável", "gracinha",
+}
+
 
 def _checar_gatilho_generico(texto: str, db: dict) -> str | None:
     texto_lower = texto.lower().strip()
@@ -1294,7 +1307,11 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
 
         # ── Resposta por gatilho ──────────────────────────
         chave = self._checar_gatilho(message.content)
-        if chave and (vampy_chamada or random.random() < 0.25):
+        # CORREÇÃO: elogios ("fofa", "linda" etc.) só disparam se a
+        # Vampy foi citada de verdade (vampy_chamada) — nunca pela
+        # chance aleatória de 25%, que é só pros gatilhos genéricos
+        pode_por_chance = chave not in _CHAVES_EXIGEM_CITACAO and random.random() < 0.25
+        if chave and (vampy_chamada or pode_por_chance):
             resp = self._responder(chave)
             if resp:
                 self._ultimo_resp[message.channel.id] = now
