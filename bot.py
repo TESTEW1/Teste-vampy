@@ -2,7 +2,7 @@
 ╔══════════════════════════════════════════════════════════════════╗
 ║                    🦇  VAMPY BOT  🖤                             ║
 ║             Uma morceguinha alegre e atentada                    ║
-║                         v1.0 — Online                            ║
+║                         v1.1 — Online                            ║
 ╚══════════════════════════════════════════════════════════════════╝
 
 Inspirada na Lilu 🐱 — mesma alma cheia de carinho, agora com asinhas
@@ -20,6 +20,7 @@ import asyncio
 import os
 import json
 import random
+import re
 from datetime import datetime, timezone
 from collections import defaultdict, deque
 from dotenv import load_dotenv
@@ -82,6 +83,14 @@ def _salvar_dialogo(db: dict):
 # ══════════════════════════════════════════════════════════════════
 # alegre, atentada, adora aparecer do nada e pregar peça na galera
 
+# respostas pra "quem é você / quem é vc" (reaproveitadas em várias grafias)
+_RESP_QUEM_E_VC = [
+    "eu sou a Vampy!! uma morceguinha bem atentada que vive aparecendo do nada por aqui 🦇🖤",
+    "eu?? sou a Vampy, a morceguinha oficial desse servidor!! adoro pregar peças e aparecer de surpresa 🦇✨",
+    "*se apresenta toda animada* sou a Vampy!! prazer!! 😈🦇",
+    "hmm, boa pergunta!! sou a Vampy, moro de cabeça pra baixo e adoro uma arte!! 🦇🌙",
+]
+
 _RESPOSTAS_SEED = {
 
     # ── Bom dia ──────────────────────────────────────────────────
@@ -137,6 +146,91 @@ _RESPOSTAS_SEED = {
         "oiii, tudo bem por aí?? 🦇🌙",
         "*bate as asinhas de felicidade* oiii!! 🦇✨",
     ],
+    "oii": [
+        "OIIII!! *voa fazendo peraltice no ar* 🦇✨",
+        "oiiii genteee!! cheguei que nem um furacão de asinhas!! 🦇💨",
+        "*rodopia toda animada* oiiii!! 😈🦇",
+    ],
+    "oie": [
+        "oiêee!! *bate as asinhas de tanta felicidade* 🦇💜",
+        "oiê oiê!! quem me chamou?? 🦇✨",
+    ],
+    "ola": [
+        "olaaa!! *pousa suave do seu lado* 🦇🖤",
+        "olá olá!! bem-vindo(a) ao meu cantinho de cabeça pra baixo!! 🦇✨",
+    ],
+    "opa": [
+        "OPA!! *quase caiu do galho de susto* 🦇😂",
+        "opa opa!! e aí, o que rolou?? 😈🦇",
+        "*aparece do nada* opa, presente!! 🦇✨",
+    ],
+    "e ai": [
+        "e aíí!! *pousa do seu lado* tudo certo?? 🦇🖤",
+        "eaí, beleza?? *bate as asinhas* 😈🦇",
+    ],
+    "eae": [
+        "eaee!! *aparece de cabeça pra baixo* tudo bem?? 🦇✨",
+        "eaee, chegando com estilo!! 😈🦇",
+    ],
+    "salve": [
+        "salveee!! 🦇🖤 *faz uma reverência voando*",
+        "salve salve!! quem tá on?? 😈🦇",
+    ],
+    "hola": [
+        "¡holaaa!! também sei um pouquinho de espanhol, viu?? 🦇✨",
+        "¡hola hola!! *acena com a asinha* bienvenido(a)!! 🦇🖤",
+        "holaaa!! errrr... isso é tudo que eu sei falar em espanhol kkk 😈🦇",
+    ],
+    "hey": [
+        "heeey!! *aparece voando rapidinho* 🦇✨",
+        "hey hey!! e aí, tudo certo?? 😈🦇",
+    ],
+
+    # ── Tudo bem / como você está (perguntando pra Vampy) ───────
+    "tudo bem": [
+        "comigo tá tudo ótimo!! voando por aí e aprontando!! e com você?? 🦇💜",
+        "tudo jóia por aqui!! *bate as asinhas felizes* e você, tá tudo certo?? 🦇✨",
+        "tudo em paz (por enquanto 😈) e com você, tudo bem?? 🦇🖤",
+    ],
+    "tudo bom": [
+        "tudo ótimo por aqui!! cheia de energia pra aprontar!! e contigo?? 🦇✨",
+        "tudo bom sim!! *rodopia no ar* e você, tudo certo?? 😈🦇",
+    ],
+    "beleza": [
+        "belezaaa!! tô voando numa boa!! e você?? 🦇💜",
+        "de boa por aqui!! *pendura de cabeça pra baixo relaxada* e aí?? 😈🦇",
+    ],
+    "blz": [
+        "blzinha!! tudo tranquilo por aqui!! 🦇✨",
+        "blz sim!! e contigo, tá tudo certo?? 😈🦇",
+    ],
+    "vc ta bem": [
+        "tô ótima!! *bate as asinhas* obrigada por perguntar!! e você, tá bem?? 🦇💜",
+        "tô sim!! cheia de arte na cabeça hoje!! e você, tudo certo?? 🦇🖤",
+    ],
+    "você está bem": [
+        "estou sim, muito bem!! obrigada por se importar!! 🦇💜 e você, está tudo bem??",
+        "tô numa boa!! *sorri mostrando as presinhas* e com você, tá tudo certo?? 🦇✨",
+    ],
+    "cê tá bem": [
+        "tô sim!! *voa contente* e você, tá tudo certo por aí?? 🦇🖤",
+    ],
+    "como vc ta": [
+        "tô numa boa, obrigada por perguntar!! *rodopia* e você?? 🦇✨",
+    ],
+    "como você está": [
+        "estou muito bem, obrigada!! e você, como está?? 🦇💜",
+    ],
+
+    # ── Quem é você? (apresentação) ─────────────────────────────
+    "quem é vc": _RESP_QUEM_E_VC,
+    "quem é você": _RESP_QUEM_E_VC,
+    "quem e vc": _RESP_QUEM_E_VC,
+    "quem e voce": _RESP_QUEM_E_VC,
+    "quem eh vc": _RESP_QUEM_E_VC,
+    "quem eh voce": _RESP_QUEM_E_VC,
+    "o que é vc": _RESP_QUEM_E_VC,
+    "o que é você": _RESP_QUEM_E_VC,
 
     # ── Obrigado(a) ──────────────────────────────────────────────
     "obrigad": [
@@ -175,10 +269,51 @@ def _checar_gatilho_generico(texto: str, db: dict) -> str | None:
     texto_lower = texto.lower().strip()
     if texto_lower in db["respostas"]:
         return texto_lower
+    # usa \b (fronteira de palavra) pra evitar que gatilhos curtos como
+    # "oi" ou "hey" disparem dentro de palavras aleatórias (ex: "dois", "coisa")
     for chave in db["respostas"]:
-        if chave in texto_lower:
+        padrao = r"\b" + re.escape(chave) + r"\b"
+        if re.search(padrao, texto_lower):
             return chave
     return None
+
+
+# ══════════════════════════════════════════════════════════════════
+#  🦇  APRESENTAÇÃO TÍMIDA — "venha vampy, de oi"
+# ══════════════════════════════════════════════════════════════════
+# quando alguém chama a Vampy especificamente pra ela dar um oi /
+# se apresentar, ela aparece bem tímida e, uns segundos depois
+# (digitando...), manda uma segunda mensagem mais soltinha
+
+_PEDIDOS_APRESENTACAO = [
+    "de oi", "dê um oi", "da um oi", "dá um oi", "diz oi", "diga oi",
+    "manda um oi", "mande um oi", "se apresenta", "se apresente",
+    "apresenta ela", "apresente ela", "vem dar um oi", "venha dar um oi",
+    "vem dizer oi", "venha dizer oi", "aparece pra galera", "apareça pra galera",
+    "vem se apresentar", "venha se apresentar",
+]
+
+_APRESENTACAO_TIMIDA_INICIAL = [
+    "*aparece bem devagarinho, meio encolhida atrás da asa* ...oi... 🦇🖤",
+    "*espia por trás do galho, tímida* o-oi... eu sou a Vampy... 🦇💜",
+    "*desce voando bem de leve, meio sem graça* oi... prazer, eu sou a Vampy 🦇🌙",
+    "*se esconde atrás da própria asinha e espia* ...oi gente... 🦇✨",
+    "*pousa bem quietinha, olhando de canto* oi... desculpa, fico meio tímida às vezes 🦇🖤",
+]
+
+_APRESENTACAO_TIMIDA_SEGUNDA = [
+    "eu estou feliz em estar aqui de novo... 🦇💜",
+    "fico feliz de poder aparecer aqui de novo!! 🦇🖤",
+    "que bom estar aqui com vocês outra vez... 🦇✨",
+    "eu gosto muito daqui... fico feliz em voltar sempre 🦇💜",
+]
+
+
+def _eh_pedido_apresentacao(texto: str) -> bool:
+    texto_lower = texto.lower()
+    if "vampy" not in texto_lower:
+        return False
+    return any(pedido in texto_lower for pedido in _PEDIDOS_APRESENTACAO)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -230,6 +365,23 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             self.bot.user in message.mentions
             or "vampy" in message.content.lower()
         )
+
+        # ── Pedido de apresentação tímida (prioridade máxima) ──────
+        # ex: "Venha vampy, de oi" — ignora o cooldown normal porque
+        # é um pedido direto e específico
+        if _eh_pedido_apresentacao(message.content):
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.8, 1.6))
+            await message.reply(random.choice(_APRESENTACAO_TIMIDA_INICIAL), mention_author=False)
+
+            async def _segunda_mensagem(channel: discord.abc.Messageable):
+                async with channel.typing():
+                    await asyncio.sleep(10)
+                await channel.send(random.choice(_APRESENTACAO_TIMIDA_SEGUNDA))
+
+            asyncio.create_task(_segunda_mensagem(message.channel))
+            return
 
         now = datetime.now(timezone.utc)
         ultimo = self._ultimo_resp.get(message.channel.id)
