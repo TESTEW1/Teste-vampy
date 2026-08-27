@@ -98,6 +98,14 @@ OROCHI_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
 # texto puro, sem necessariamente marcar com @ (ex: "chama a Orochi aí")
 OROCHI_APELIDOS = ["orochi"]
 
+# ID do Felipe — mod do servidor, recebe interações especiais e
+# personalizadas (limitadas a 1 a cada 30 minutos, pra não repetir)
+FELIPE_USER_ID = 1466109068371431616
+FELIPE_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
+# apelido usado só como referência (a citação por outra pessoa usa
+# apenas @menção digitada de verdade, ver comentário mais abaixo)
+FELIPE_APELIDOS = ["felipe"]
+
 # aparições espontâneas ("do nada", sem ninguém chamar) — raras de
 # propósito, no máximo 1 a cada ~13 horas, com ou sem citar alguém
 APARICAO_ESPONTANEA_COOLDOWN_SEGUNDOS = 13 * 60 * 60  # 13 horas
@@ -808,6 +816,27 @@ _INTERACOES_OROCHI = [
 
 
 # ══════════════════════════════════════════════════════════════════
+#  🦇  INTERAÇÕES ESPECIAIS COM O FELIPE (a cada 30 minutos)
+# ══════════════════════════════════════════════════════════════════
+# mesma lógica da Dalia: o Felipe (FELIPE_USER_ID) é mod do servidor,
+# então a Vampy trata ele com um pouco mais de respeito/comportada,
+# mas sem perder a marra — dispara quando ele fala, ou é citado por
+# alguém via @menção de verdade, no máximo 1x a cada 30 minutos
+# quando é ele quem fala
+
+_INTERACOES_FELIPE = [
+    "opa, o Felipe apareceu!! *se ajeita, afinal é mod* 🦇🖤",
+    "*bate continência com a asinha* e aí, Felipe, tudo em ordem por aqui?? 🦇✨",
+    "Felipe!! um dos mods mais gente boa que eu conheço 😈🦇",
+    "*pousa educadinha, se comportando* cuidado que eu ando aprontando por aqui, viu 😹🦇",
+    "hmm, quando o Felipe aparece todo mundo se ajeita, né?? 😹🦇",
+    "*acena animada* olha só quem chegou, o Felipe!! 🦇🌙",
+    "Felipe na área!! modera direitinho que eu fico de olho 😈🦇🖤",
+    "*voa em círculos* sempre bom ver o Felipe rondando o servidor 🦇✨",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
 #  🦇  RESPOSTAS PRA ATAQUES EM GERAL (fogo, facada, tiro)
 # ══════════════════════════════════════════════════════════════════
 # diferente da piada específica do Ghost lá em cima, isso aqui vale
@@ -1007,6 +1036,10 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # mesma lógica do Draw, Ghost e Dalia
         self._ultimo_orochi: datetime = datetime.now(timezone.utc)
 
+        # Cooldown separado só pra interação especial com o Felipe —
+        # mesma lógica do Draw, Ghost, Dalia e Orochi
+        self._ultimo_felipe: datetime = datetime.now(timezone.utc)
+
         # Cooldown separado pras aparições espontâneas ("do nada")
         self._ultimo_espontaneo: datetime | None = None
 
@@ -1173,6 +1206,19 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             await message.reply(random.choice(_INTERACOES_OROCHI), mention_author=False)
             return
 
+        # ── Reação automática sempre que o Felipe for citado ────────
+        # mesma lógica do Draw, Ghost, Dalia e Orochi — só reage a
+        # @menção DIGITADA de verdade (marcar o nome dele de propósito
+        # no Discord), nunca só por citar "felipe" solto numa frase.
+        # Exceto quando é ele mesmo falando, que cai no bloco dele
+        # mais abaixo
+        if message.author.id != FELIPE_USER_ID and FELIPE_USER_ID in ids_mencionados:
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.4, 1.0))
+            await message.reply(random.choice(_INTERACOES_FELIPE), mention_author=False)
+            return
+
         # ── Interação especial e personalizada com o Draw ───────────
         # dispara quando ele fala (ou cita a Vampy), no máximo 1x a
         # cada 30 minutos — não depende do cooldown normal do canal.
@@ -1255,6 +1301,21 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 async with message.channel.typing():
                     await asyncio.sleep(random.uniform(0.6, 1.4))
                 await message.reply(random.choice(_INTERACOES_OROCHI), mention_author=False)
+                return
+
+        # ── Interação especial com o Felipe ─────────────────────────
+        # mesma lógica do Draw, Ghost, Dalia e Orochi: dispara quando
+        # ele fala, no máximo 1x a cada 30 minutos, com uma chance
+        # aleatória depois que o cooldown libera
+        if message.author.id == FELIPE_USER_ID:
+            agora_felipe = datetime.now(timezone.utc)
+            cooldown_passou = (agora_felipe - self._ultimo_felipe).total_seconds() >= FELIPE_COOLDOWN_SEGUNDOS
+            if cooldown_passou and random.random() < 0.4:
+                self._ultimo_felipe = agora_felipe
+                self._ultimo_resp[message.channel.id] = agora_felipe
+                async with message.channel.typing():
+                    await asyncio.sleep(random.uniform(0.6, 1.4))
+                await message.reply(random.choice(_INTERACOES_FELIPE), mention_author=False)
                 return
 
         # ── Respostas pra ataques em geral (fogo, facada, tiro) ─────
