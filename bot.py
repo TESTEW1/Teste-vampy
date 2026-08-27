@@ -22,6 +22,13 @@ Changelog v1.2:
     contam @menções DIGITADAS de verdade no texto cru da mensagem.
   • CORRIGIDO: proteção contra processar a mesma mensagem duas vezes
     (o que causava respostas duplicadas pra mesma mensagem).
+  • CORRIGIDO: as reações especiais de "fulano foi citado por outra
+    pessoa" (Draw, Ghost, namorada do Ghost, Dalia, Orochi) estavam
+    disparando quando o nome dela só aparecia solto numa frase (ex:
+    "a orochi é muito ativa"), mesmo sem ninguém estar de fato
+    chamando/marcando ela. Agora essas reações só disparam com uma
+    @menção DIGITADA de verdade (marcou o nome dela no Discord de
+    propósito) — citar o nome em texto puro não conta mais sozinho.
 """
 
 import discord
@@ -611,6 +618,14 @@ def _mensagem_cita_pessoa(message: discord.Message, user_id: int, apelidos: list
     do Ghost, do Draw etc., mesmo sobre outro assunto, seria tratada
     como "citou ele", e a Vampy reagiria errado (foi exatamente o
     bug visto no servidor).
+
+    NOTA: essa função não é mais usada pra decidir a reação especial
+    de "fulano foi citado por OUTRA pessoa" (ver on_message) — lá
+    agora só conta @menção digitada de verdade, porque o apelido em
+    texto puro dava falso-positivo demais (ex: alguém só comentando
+    "a orochi é muito ativa" sem estar chamando/marcando ela).
+    Mantida aqui só como utilitária, caso outra parte do código queira
+    reaproveitar essa checagem por nome no futuro.
     """
     if user_id in _ids_mencionados_diretamente(message):
         return True
@@ -1035,13 +1050,15 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             return
 
         # ── Elogio automático sempre que o Draw for citado ──────────
-        # toda vez que QUALQUER pessoa citar o Draw — seja marcando
-        # com @ de propósito ou só falando o nome dele (ex: "dá um oi
-        # pro Draw") — a Vampy já solta uma reação/elogio pra ele na
-        # hora, sem cooldown. Só não dispara quando é o próprio Draw
-        # falando, porque aí quem cuida disso é o bloco de interação
-        # dele logo abaixo (com o cooldown de 30 minutos dele)
-        if message.author.id != DRAW_USER_ID and _mensagem_cita_pessoa(message, DRAW_USER_ID, DRAW_APELIDOS):
+        # CORREÇÃO: antes contava tanto @menção digitada quanto só o
+        # nome/apelido dele solto em texto puro (via _mensagem_cita_pessoa),
+        # o que disparava a reação até em frases que só comentavam sobre
+        # ele sem chamar/marcar ninguém (ex: "acho que o draw é gente boa"
+        # dito sem @). Agora só conta @menção DIGITADA de verdade — o
+        # nome sozinho na frase não é mais suficiente. Só não dispara
+        # quando é o próprio Draw falando, porque aí quem cuida disso é
+        # o bloco de interação dele logo abaixo (com o cooldown de 30 min)
+        if message.author.id != DRAW_USER_ID and DRAW_USER_ID in ids_mencionados:
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             async with message.channel.typing():
                 await asyncio.sleep(random.uniform(0.4, 1.0))
@@ -1049,11 +1066,11 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             return
 
         # ── Reação automática sempre que o Ghost for citado ─────────
-        # mesma lógica do Draw: se alguém citar o Ghost (por @ de
-        # propósito ou pelo nome), a Vampy já reage na hora — exceto
-        # quando é o próprio Ghost falando, que cai no bloco dele mais
-        # abaixo
-        if message.author.id != GHOST_USER_ID and _mensagem_cita_pessoa(message, GHOST_USER_ID, GHOST_APELIDOS):
+        # CORREÇÃO: mesma lógica do Draw — agora só reage a @menção
+        # DIGITADA de verdade, não a citação por nome solto no texto.
+        # Exceto quando é o próprio Ghost falando, que cai no bloco
+        # dele mais abaixo
+        if message.author.id != GHOST_USER_ID and GHOST_USER_ID in ids_mencionados:
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             async with message.channel.typing():
                 await asyncio.sleep(random.uniform(0.4, 1.0))
@@ -1061,11 +1078,10 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             return
 
         # ── Reação automática sempre que a namorada do Ghost for citada ──
-        # mesma lógica do Draw e do Ghost: se alguém citar ela (por @ de
-        # propósito ou pelo nome, se você preencher GHOST_NAMORADA_APELIDOS),
-        # a Vampy já reage na hora — exceto quando é ela mesma falando,
-        # que cai no bloco dela mais abaixo
-        if message.author.id != GHOST_NAMORADA_USER_ID and _mensagem_cita_pessoa(message, GHOST_NAMORADA_USER_ID, GHOST_NAMORADA_APELIDOS):
+        # CORREÇÃO: mesma lógica do Draw e do Ghost — agora só reage a
+        # @menção DIGITADA de verdade. Exceto quando é ela mesma
+        # falando, que cai no bloco dela mais abaixo
+        if message.author.id != GHOST_NAMORADA_USER_ID and GHOST_NAMORADA_USER_ID in ids_mencionados:
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             async with message.channel.typing():
                 await asyncio.sleep(random.uniform(0.4, 1.0))
@@ -1073,11 +1089,10 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             return
 
         # ── Reação automática sempre que a Dalia for citada ─────────
-        # mesma lógica do Draw, Ghost e namorada do Ghost: se alguém
-        # citar a Dalia (por @ de propósito ou pelo nome/apelido), a
-        # Vampy já reage na hora — exceto quando é ela mesma falando,
-        # que cai no bloco dela mais abaixo
-        if message.author.id != DALIA_USER_ID and _mensagem_cita_pessoa(message, DALIA_USER_ID, DALIA_APELIDOS):
+        # CORREÇÃO: mesma lógica do Draw, Ghost e namorada do Ghost —
+        # agora só reage a @menção DIGITADA de verdade. Exceto quando
+        # é ela mesma falando, que cai no bloco dela mais abaixo
+        if message.author.id != DALIA_USER_ID and DALIA_USER_ID in ids_mencionados:
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             async with message.channel.typing():
                 await asyncio.sleep(random.uniform(0.4, 1.0))
@@ -1085,11 +1100,13 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             return
 
         # ── Reação automática sempre que a Orochi for citada ────────
-        # mesma lógica do Draw, Ghost e Dalia: se alguém citar a
-        # Orochi (por @ de propósito ou pelo nome/apelido), a Vampy já
-        # reage na hora — exceto quando é ela mesma falando, que cai
-        # no bloco dela mais abaixo
-        if message.author.id != OROCHI_USER_ID and _mensagem_cita_pessoa(message, OROCHI_USER_ID, OROCHI_APELIDOS):
+        # CORREÇÃO: mesma lógica do Draw, Ghost e Dalia — agora só
+        # reage a @menção DIGITADA de verdade. Antes, uma mensagem
+        # como "É q a orochi é muito ativa" (só comentando sobre ela,
+        # sem marcar ninguém) disparava essa reação por engano, como
+        # se a Vampy estivesse cumprimentando a Orochi direto. Exceto
+        # quando é ela mesma falando, que cai no bloco dela mais abaixo
+        if message.author.id != OROCHI_USER_ID and OROCHI_USER_ID in ids_mencionados:
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             async with message.channel.typing():
                 await asyncio.sleep(random.uniform(0.4, 1.0))
