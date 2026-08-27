@@ -56,6 +56,15 @@ GHOST_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
 # texto puro, sem necessariamente marcar com @ (ex: "chama o Ghost aí")
 GHOST_APELIDOS = ["ghost"]
 
+# ID da namorada do Ghost — mesma lógica de interação especial que o
+# Draw e o Ghost têm (limitada a 1 a cada 30 minutos, pra não repetir)
+GHOST_NAMORADA_USER_ID = 757956601020940338
+GHOST_NAMORADA_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
+# apelidos/nomes usados pra reconhecer quando alguém CITA ela em texto
+# puro, sem marcar com @ — deixe vazio se não tiver um apelido fixo
+# pra usar aqui (ex: GHOST_NAMORADA_APELIDOS = ["nomeDela"])
+GHOST_NAMORADA_APELIDOS = []
+
 # aparições espontâneas ("do nada", sem ninguém chamar) — raras de
 # propósito, no máximo 1 a cada ~13 horas, com ou sem citar alguém
 APARICAO_ESPONTANEA_COOLDOWN_SEGUNDOS = 13 * 60 * 60  # 13 horas
@@ -647,6 +656,24 @@ def _contem_gatilho_tiro(texto: str) -> bool:
 
 
 # ══════════════════════════════════════════════════════════════════
+#  🦇  INTERAÇÕES ESPECIAIS COM A NAMORADA DO GHOST (a cada 30 min)
+# ══════════════════════════════════════════════════════════════════
+# mesma lógica do Draw e do Ghost: sempre que ela (GHOST_NAMORADA_USER_ID)
+# fala, ou é citada por alguém, a Vampy manda uma mensagem personalizada
+# — com uma zoeirinha extra por ela namorar o Ghost — no máximo 1x a
+# cada 30 minutos quando é ela quem fala
+
+_INTERACOES_GHOST_NAMORADA = [
+    "opa, chegou a namorada do Ghost!! 🦇💕",
+    "*sorri sapeca* eii, você é quem rouba a atenção do Ghost por aqui, né?? 😈🦇💜",
+    "*cochicha rindo* psiu, o Ghost fica todo bobo quando você aparece, sabia?? 🦇💕",
+    "*voa em círculos animada* olha só quem chegou, a namorada do Ghost!! 🦇✨",
+    "casal favorito do servidor apareceu (bem, metade dele) 🦇💜",
+    "*pousa do seu lado* e aí, tudo certo?? o Ghost já sabe que você tá aqui?? 😈🦇",
+    "*acena toda animada* oi oi!! como é namorar o Ghost, me conta os podres 😹🦇",
+]
+
+# ══════════════════════════════════════════════════════════════════
 #  🦇  RESPOSTAS PRA ATAQUES EM GERAL (fogo, facada, tiro)
 # ══════════════════════════════════════════════════════════════════
 # diferente da piada específica do Ghost lá em cima, isso aqui vale
@@ -787,6 +814,10 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # lógica do Draw, também começa a contar a partir do boot do bot
         self._ultimo_ghost: datetime = datetime.now(timezone.utc)
 
+        # Cooldown separado só pra interação especial com a namorada do
+        # Ghost — mesma lógica do Draw e do Ghost
+        self._ultimo_ghost_namorada: datetime = datetime.now(timezone.utc)
+
         # Cooldown separado pras aparições espontâneas ("do nada")
         self._ultimo_espontaneo: datetime | None = None
 
@@ -893,6 +924,18 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             await message.reply(random.choice(_INTERACOES_GHOST), mention_author=False)
             return
 
+        # ── Reação automática sempre que a namorada do Ghost for citada ──
+        # mesma lógica do Draw e do Ghost: se alguém citar ela (por @ ou
+        # pelo nome, se você preencher GHOST_NAMORADA_APELIDOS), a Vampy
+        # já reage na hora — exceto quando é ela mesma falando, que cai
+        # no bloco dela mais abaixo
+        if message.author.id != GHOST_NAMORADA_USER_ID and _mensagem_cita_pessoa(message, GHOST_NAMORADA_USER_ID, GHOST_NAMORADA_APELIDOS):
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.4, 1.0))
+            await message.reply(random.choice(_INTERACOES_GHOST_NAMORADA), mention_author=False)
+            return
+
         # ── Interação especial e personalizada com o Draw ───────────
         # dispara quando ele fala (ou cita a Vampy), no máximo 1x a
         # cada 30 minutos — não depende do cooldown normal do canal.
@@ -930,6 +973,21 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 async with message.channel.typing():
                     await asyncio.sleep(random.uniform(0.6, 1.4))
                 await message.reply(random.choice(_INTERACOES_GHOST), mention_author=False)
+                return
+
+        # ── Interação especial com a namorada do Ghost ──────────────
+        # mesma lógica do Draw e do Ghost: dispara quando ela fala, no
+        # máximo 1x a cada 30 minutos, com uma chance aleatória depois
+        # que o cooldown libera
+        if message.author.id == GHOST_NAMORADA_USER_ID:
+            agora_ghost_namorada = datetime.now(timezone.utc)
+            cooldown_passou = (agora_ghost_namorada - self._ultimo_ghost_namorada).total_seconds() >= GHOST_NAMORADA_COOLDOWN_SEGUNDOS
+            if cooldown_passou and random.random() < 0.4:
+                self._ultimo_ghost_namorada = agora_ghost_namorada
+                self._ultimo_resp[message.channel.id] = agora_ghost_namorada
+                async with message.channel.typing():
+                    await asyncio.sleep(random.uniform(0.6, 1.4))
+                await message.reply(random.choice(_INTERACOES_GHOST_NAMORADA), mention_author=False)
                 return
 
         # ── Respostas pra ataques em geral (fogo, facada, tiro) ─────
