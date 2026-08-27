@@ -75,6 +75,14 @@ GHOST_NAMORADA_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
 # pra usar aqui (ex: GHOST_NAMORADA_APELIDOS = ["nomeDela"])
 GHOST_NAMORADA_APELIDOS = []
 
+# ID da Dalia — líder do clã, recebe interações especiais e
+# personalizadas (limitadas a 1 a cada 30 minutos, pra não repetir)
+DALIA_USER_ID = 1403092977802412042
+DALIA_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
+# apelidos/nomes usados pra reconhecer quando alguém CITA a Dalia em
+# texto puro, sem necessariamente marcar com @ (ex: "chama a Dalia aí")
+DALIA_APELIDOS = ["dalia", "dália"]
+
 # aparições espontâneas ("do nada", sem ninguém chamar) — raras de
 # propósito, no máximo 1 a cada ~13 horas, com ou sem citar alguém
 APARICAO_ESPONTANEA_COOLDOWN_SEGUNDOS = 13 * 60 * 60  # 13 horas
@@ -724,6 +732,27 @@ _INTERACOES_GHOST_NAMORADA = [
 ]
 
 # ══════════════════════════════════════════════════════════════════
+#  🦇  INTERAÇÕES ESPECIAIS COM A DALIA (líder do clã, a cada 30 min)
+# ══════════════════════════════════════════════════════════════════
+# mesma lógica do Draw, Ghost e namorada do Ghost: sempre que a Dalia
+# (DALIA_USER_ID) fala, ou é citada por alguém, a Vampy manda uma
+# mensagem personalizada — um pouco mais respeitosa, já que ela é a
+# líder do clã — no máximo 1x a cada 30 minutos quando é ela quem fala
+
+_INTERACOES_DALIA = [
+    "opa, a Dalia apareceu!! *se ajeita toda comportada* 🦇🖤",
+    "*faz uma reverência voando* a líder do clã chegou!! 🦇✨",
+    "Dalia!! sempre um prazer receber a chefona por aqui 😈🦇",
+    "*pousa educadinha* e aí, Dalia, tudo em ordem no clã?? 🦇💜",
+    "*bate as asinhas com respeito* olha só quem chegou, a Dalia!! 🦇🌙",
+    "hmm, quando a Dalia aparece todo mundo se ajeita, né?? 😹🦇",
+    "*se pendura discretamente por perto, se comportando* a líder merece atenção especial 🦇✨",
+    "Dalia na área!! bora fazer valer o nome do clã 😈🦇🖤",
+    "*pousa e faz continência com a asinha* Dalia, minha líder favorita!! 🦇💜",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
 #  🦇  RESPOSTAS PRA ATAQUES EM GERAL (fogo, facada, tiro)
 # ══════════════════════════════════════════════════════════════════
 # diferente da piada específica do Ghost lá em cima, isso aqui vale
@@ -868,6 +897,10 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # Ghost — mesma lógica do Draw e do Ghost
         self._ultimo_ghost_namorada: datetime = datetime.now(timezone.utc)
 
+        # Cooldown separado só pra interação especial com a Dalia —
+        # mesma lógica do Draw, Ghost e namorada do Ghost
+        self._ultimo_dalia: datetime = datetime.now(timezone.utc)
+
         # Cooldown separado pras aparições espontâneas ("do nada")
         self._ultimo_espontaneo: datetime | None = None
 
@@ -1008,6 +1041,18 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             await message.reply(random.choice(_INTERACOES_GHOST_NAMORADA), mention_author=False)
             return
 
+        # ── Reação automática sempre que a Dalia for citada ─────────
+        # mesma lógica do Draw, Ghost e namorada do Ghost: se alguém
+        # citar a Dalia (por @ de propósito ou pelo nome/apelido), a
+        # Vampy já reage na hora — exceto quando é ela mesma falando,
+        # que cai no bloco dela mais abaixo
+        if message.author.id != DALIA_USER_ID and _mensagem_cita_pessoa(message, DALIA_USER_ID, DALIA_APELIDOS):
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.4, 1.0))
+            await message.reply(random.choice(_INTERACOES_DALIA), mention_author=False)
+            return
+
         # ── Interação especial e personalizada com o Draw ───────────
         # dispara quando ele fala (ou cita a Vampy), no máximo 1x a
         # cada 30 minutos — não depende do cooldown normal do canal.
@@ -1060,6 +1105,21 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 async with message.channel.typing():
                     await asyncio.sleep(random.uniform(0.6, 1.4))
                 await message.reply(random.choice(_INTERACOES_GHOST_NAMORADA), mention_author=False)
+                return
+
+        # ── Interação especial com a Dalia ───────────────────────────
+        # mesma lógica do Draw, Ghost e namorada do Ghost: dispara
+        # quando ela fala, no máximo 1x a cada 30 minutos, com uma
+        # chance aleatória depois que o cooldown libera
+        if message.author.id == DALIA_USER_ID:
+            agora_dalia = datetime.now(timezone.utc)
+            cooldown_passou = (agora_dalia - self._ultimo_dalia).total_seconds() >= DALIA_COOLDOWN_SEGUNDOS
+            if cooldown_passou and random.random() < 0.4:
+                self._ultimo_dalia = agora_dalia
+                self._ultimo_resp[message.channel.id] = agora_dalia
+                async with message.channel.typing():
+                    await asyncio.sleep(random.uniform(0.6, 1.4))
+                await message.reply(random.choice(_INTERACOES_DALIA), mention_author=False)
                 return
 
         # ── Respostas pra ataques em geral (fogo, facada, tiro) ─────
