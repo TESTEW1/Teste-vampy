@@ -869,6 +869,53 @@ def _checar_gatilho_ataque(texto: str) -> str | None:
 
 
 # ══════════════════════════════════════════════════════════════════
+#  🦇  CONVITE PRA PREGAR UMA PEÇA (ex: "vamos pregar uma peça",
+#      "Vampy, vamos aprontar uma peça no @Fulano")
+# ══════════════════════════════════════════════════════════════════
+# reage na hora, sem cooldown, quando alguém propõe pregar uma peça —
+# com ou sem alvo definido. Usa padrões de regex específicos (verbo +
+# "peça") em vez de uma palavra solta como "peça" ou "aprontar",
+# justamente pra não repetir o mesmo tipo de falso-positivo que
+# aconteceu com a citação por nome (ver _mensagem_cita_pessoa) — uma
+# frase qualquer com "aprontar" sozinho não deve disparar isso
+
+_PADROES_PECA = [
+    r"pregar\s+(?:uma\s+)?pe[çc]a",
+    r"prega\s+(?:uma\s+)?pe[çc]a",
+    r"pregue\s+(?:uma\s+)?pe[çc]a",
+    r"aprontar\s+(?:uma\s+)?pe[çc]a",
+    r"apronta\s+(?:uma\s+)?pe[çc]a",
+    r"fazer\s+(?:uma\s+)?pe[çc]a\s+(?:em|no|na|com)",
+    r"faz(?:er)?\s+uma\s+pe[çc]a\s+(?:em|no|na|com)",
+]
+
+
+def _checar_gatilho_peca(texto: str) -> bool:
+    texto_lower = texto.lower()
+    return any(re.search(padrao, texto_lower) for padrao in _PADROES_PECA)
+
+
+_RESPOSTAS_PECA_COM_ALVO = [
+    "AEHÊ, adorei a ideia!! *já fica de olho em {alvo}* bora pregar uma peça nele(a) 😈🦇",
+    "*esfrega as asinhas* {alvo} nem vai saber o que atingiu... bora!! 😈🦇✨",
+    "com certeza!! já tô pensando numa peça boa pro/pra {alvo} 😈🦇🖤",
+    "*sorriso maligno* {alvo} escolhido(a)!! deixa comigo que eu ajudo a bolar 😈🦇",
+    "eu?? topo demais!! {alvo} vai ficar bem confuso(a) com isso 😹🦇",
+    "*já sacando as ideias da cabeça* {alvo}... isso vai ser bom 😈🦇✨",
+    "perfeito!! {alvo} não vai ver a peça chegando 😈🦇🖤",
+]
+
+_RESPOSTAS_PECA_SEM_ALVO = [
+    "AEHÊ, eu topo!! só falta escolher a vítima 😈🦇",
+    "*esfrega as asinhas animada* bora, quem vai ser o alvo dessa vez?? 😈🦇",
+    "eu vivo pra isso!! só me diz em quem vamos pregar 😈🦇✨",
+    "*olha em volta procurando um alvo* hmm... quem merece hoje?? 😈🦇",
+    "com certeza!! escolhe a vítima que eu ajudo a bolar a peça 😈🦇🖤",
+    "*bate as asinhas animada* SIM!! só preciso saber em quem 😈🦇",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
 #  🦇  APARIÇÕES ESPONTÂNEAS ("do nada") — raras de propósito
 # ══════════════════════════════════════════════════════════════════
 # sem ninguém chamar, sem gatilho batendo — a Vampy só aparece do
@@ -1211,6 +1258,23 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             async with message.channel.typing():
                 await asyncio.sleep(random.uniform(0.5, 1.2))
             await message.reply(resposta_ataque, mention_author=False)
+            return
+
+        # ── Convite pra pregar uma peça (ex: "vamos pregar uma peça",
+        #    "Vampy, vamos pregar uma peça no @Fulano") ──────────────
+        # reage na hora, sem cooldown — se alguém marcar um alvo com @
+        # de verdade, ela usa o nome dele na resposta; senão, topa a
+        # ideia e pergunta quem vai ser a vítima
+        if _checar_gatilho_peca(message.content):
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            alvo = _extrair_alvo_mencao(message, self.bot.user)
+            if alvo:
+                resposta_peca = random.choice(_RESPOSTAS_PECA_COM_ALVO).format(alvo=alvo)
+            else:
+                resposta_peca = random.choice(_RESPOSTAS_PECA_SEM_ALVO)
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.5, 1.2))
+            await message.reply(resposta_peca, mention_author=False)
             return
 
         # ── Zoeira automática com o alvo de sempre ──────────────────
