@@ -83,12 +83,12 @@ DALIA_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
 # texto puro, sem necessariamente marcar com @ (ex: "chama a Dalia aí")
 DALIA_APELIDOS = ["dalia", "dália"]
 
-# ID do Orochi — recebe interações especiais e personalizadas
+# ID da Orochi — recebe interações especiais e personalizadas
 # (limitadas a 1 a cada 30 minutos, pra não repetir)
 OROCHI_USER_ID = 1248748685060345969
 OROCHI_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
-# apelidos/nomes usados pra reconhecer quando alguém CITA o Orochi em
-# texto puro, sem necessariamente marcar com @ (ex: "chama o Orochi aí")
+# apelidos/nomes usados pra reconhecer quando alguém CITA a Orochi em
+# texto puro, sem necessariamente marcar com @ (ex: "chama a Orochi aí")
 OROCHI_APELIDOS = ["orochi"]
 
 # aparições espontâneas ("do nada", sem ninguém chamar) — raras de
@@ -761,21 +761,21 @@ _INTERACOES_DALIA = [
 
 
 # ══════════════════════════════════════════════════════════════════
-#  🦇  INTERAÇÕES ESPECIAIS COM O OROCHI (a cada 30 minutos)
+#  🦇  INTERAÇÕES ESPECIAIS COM A OROCHI (a cada 30 minutos)
 # ══════════════════════════════════════════════════════════════════
-# mesma lógica do Draw, Ghost e Dalia: sempre que o Orochi
-# (OROCHI_USER_ID) fala, ou é citado por alguém, a Vampy manda uma
+# mesma lógica do Draw, Ghost e Dalia: sempre que a Orochi
+# (OROCHI_USER_ID) fala, ou é citada por alguém, a Vampy manda uma
 # mensagem personalizada — no máximo 1x a cada 30 minutos quando é
-# ele quem fala
+# ela quem fala
 
 _INTERACOES_OROCHI = [
-    "opa, o Orochi apareceu!! 🦇🐍",
+    "opa, a Orochi apareceu!! 🦇🐍",
     "*pousa de olho aceso* e aí, Orochi, tudo certo?? 🦇✨",
-    "hmm, o Orochi chegou... esse nome já dá um arrepio na asinha 😈🦇",
-    "*voa em círculos, meio desconfiada, meio curiosa* olha só quem apareceu, o Orochi!! 🦇🌙",
-    "Orochi na área!! aposto que ele já tá aprontando alguma 😈🦇🖤",
-    "*se esconde um pouquinho atrás da asa, brincando* cuidado que o Orochi chegou 🦇✨",
-    "esse aí sempre traz um clima diferente quando aparece, olha só, o Orochi!! 🦇🖤",
+    "hmm, a Orochi chegou... esse nome já dá um arrepio na asinha 😈🦇",
+    "*voa em círculos, meio desconfiada, meio curiosa* olha só quem apareceu, a Orochi!! 🦇🌙",
+    "Orochi na área!! aposto que ela já tá aprontando alguma 😈🦇🖤",
+    "*se esconde um pouquinho atrás da asa, brincando* cuidado que a Orochi chegou 🦇✨",
+    "essa aí sempre traz um clima diferente quando aparece, olha só, a Orochi!! 🦇🖤",
 ]
 
 
@@ -928,7 +928,7 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # mesma lógica do Draw, Ghost e namorada do Ghost
         self._ultimo_dalia: datetime = datetime.now(timezone.utc)
 
-        # Cooldown separado só pra interação especial com o Orochi —
+        # Cooldown separado só pra interação especial com a Orochi —
         # mesma lógica do Draw, Ghost e Dalia
         self._ultimo_orochi: datetime = datetime.now(timezone.utc)
 
@@ -1084,11 +1084,11 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             await message.reply(random.choice(_INTERACOES_DALIA), mention_author=False)
             return
 
-        # ── Reação automática sempre que o Orochi for citado ────────
-        # mesma lógica do Draw, Ghost e Dalia: se alguém citar o
+        # ── Reação automática sempre que a Orochi for citada ────────
+        # mesma lógica do Draw, Ghost e Dalia: se alguém citar a
         # Orochi (por @ de propósito ou pelo nome/apelido), a Vampy já
-        # reage na hora — exceto quando é ele mesmo falando, que cai
-        # no bloco dele mais abaixo
+        # reage na hora — exceto quando é ela mesma falando, que cai
+        # no bloco dela mais abaixo
         if message.author.id != OROCHI_USER_ID and _mensagem_cita_pessoa(message, OROCHI_USER_ID, OROCHI_APELIDOS):
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             async with message.channel.typing():
@@ -1165,8 +1165,8 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 await message.reply(random.choice(_INTERACOES_DALIA), mention_author=False)
                 return
 
-        # ── Interação especial com o Orochi ─────────────────────────
-        # mesma lógica do Draw, Ghost e Dalia: dispara quando ele
+        # ── Interação especial com a Orochi ─────────────────────────
+        # mesma lógica do Draw, Ghost e Dalia: dispara quando ela
         # fala, no máximo 1x a cada 30 minutos, com uma chance
         # aleatória depois que o cooldown libera
         if message.author.id == OROCHI_USER_ID:
