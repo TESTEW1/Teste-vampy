@@ -497,6 +497,28 @@ _INTERACOES_GHOST = [
     "eu escuto esse nome e já sei, só pode ser o Ghost chegando 🦇🌙",
 ]
 
+# palavras-chave que disparam a reação especial quando o Ghost faz a
+# brincadeira clássica dele de "dar um tiro" em alguém (ex: "de um tiro
+# no Draw") — reage na hora, sem cooldown, é a piada de sempre dele
+_GATILHOS_TIRO_GHOST = ["tiro", "tiros", "atira", "atirar", "atirou", "bala", "balaço"]
+
+_INTERACOES_GHOST_TIRO = [
+    "*se esconde atrás da asinha* Ghost, calma, larga essa arma imaginária 😹🦇",
+    "AAAAH lá vem o Ghost ameaçando todo mundo de novo kkkk 🔫🦇",
+    "*voa se escondendo atrás de alguém* ninguém tá seguro quando o Ghost aparece assim 😈🦇",
+    "*pisca pra vítima* boa sorte correndo do Ghost, viu 😹🦇",
+    "Ghost sendo Ghost de novo... 🔫😈🦇",
+    "*ri nervosa e se esconde* mais uma ameaça de brincadeira do Ghost 😹🦇",
+    "*bate as asinhas alarmada* CUIDADO, o Ghost tá de mira em alguém!! 😈🦇",
+]
+
+def _contem_gatilho_tiro(texto: str) -> bool:
+    texto_lower = texto.lower()
+    return any(
+        re.search(r"\b" + re.escape(palavra) + r"\b", texto_lower)
+        for palavra in _GATILHOS_TIRO_GHOST
+    )
+
 
 # ══════════════════════════════════════════════════════════════════
 #  🦇  APARIÇÕES ESPONTÂNEAS ("do nada") — raras de propósito
@@ -649,6 +671,15 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # mesma lógica do Draw: dispara quando ele fala, no máximo 1x a
         # cada 30 minutos, com uma chance aleatória depois que libera
         if message.author.id == GHOST_USER_ID:
+            # a brincadeira do "tiro" tem prioridade e reage na hora,
+            # sem cooldown — é a piada clássica dele
+            if _contem_gatilho_tiro(message.content):
+                self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+                async with message.channel.typing():
+                    await asyncio.sleep(random.uniform(0.4, 1.0))
+                await message.reply(random.choice(_INTERACOES_GHOST_TIRO), mention_author=False)
+                return
+
             agora_ghost = datetime.now(timezone.utc)
             cooldown_passou = (agora_ghost - self._ultimo_ghost).total_seconds() >= GHOST_COOLDOWN_SEGUNDOS
             if cooldown_passou and random.random() < 0.4:
