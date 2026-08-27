@@ -36,6 +36,11 @@ TOKEN = os.getenv("VAMPY_TOKEN") or os.getenv("TOKEN")
 # Arquivo de aprendizado de diálogo
 DIALOGO_FILE = "vampy_dialogo.json"
 
+# ID do Draw — recebe interações especiais e personalizadas (limitadas
+# a 1 a cada 30 minutos, pra não ficar repetitivo)
+DRAW_USER_ID = 763467697069359143
+DRAW_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
+
 # ══════════════════════════════════════════════════════════════════
 #  🤖  SETUP DO BOT
 # ══════════════════════════════════════════════════════════════════
@@ -89,6 +94,15 @@ _RESP_QUEM_E_VC = [
     "eu?? sou a Vampy, a morceguinha oficial desse servidor!! adoro pregar peças e aparecer de surpresa 🦇✨",
     "*se apresenta toda animada* sou a Vampy!! prazer!! 😈🦇",
     "hmm, boa pergunta!! sou a Vampy, moro de cabeça pra baixo e adoro uma arte!! 🦇🌙",
+]
+
+# respostas pra "você gosta de morcegos/vampiros?" (reaproveitadas em várias grafias)
+_RESP_GOSTA_MORCEGO_VAMPIRO = [
+    "AMO demais os dois!! eu SOU uma morceguinha vampira, oras, é meio óbvio 🦇🖤",
+    "muitooo!! morcego é fofo e vampiro tem todo aquele mistério... combinação perfeita pra mim 🦇✨",
+    "óbvio que sim!! aliás, hã... eu meio que SOU as duas coisas 😈🦇",
+    "com certeza!! voar de cabeça pra baixo à noite é a melhor parte do meu dia 🦇🌙",
+    "gosto muitíssimo!! é praticamente minha família, sabe?? 🦇💜",
 ]
 
 _RESPOSTAS_SEED = {
@@ -232,6 +246,18 @@ _RESPOSTAS_SEED = {
     "o que é vc": _RESP_QUEM_E_VC,
     "o que é você": _RESP_QUEM_E_VC,
 
+    # ── Você gosta de morcegos/vampiros? ────────────────────────
+    "gosta de morcegos e vampiros": _RESP_GOSTA_MORCEGO_VAMPIRO,
+    "gosta de morcego e vampiro": _RESP_GOSTA_MORCEGO_VAMPIRO,
+    "gosta de morcegos": _RESP_GOSTA_MORCEGO_VAMPIRO,
+    "gosta de morcego": _RESP_GOSTA_MORCEGO_VAMPIRO,
+    "gosta de vampiros": _RESP_GOSTA_MORCEGO_VAMPIRO,
+    "gosta de vampiro": _RESP_GOSTA_MORCEGO_VAMPIRO,
+    "curte morcego": _RESP_GOSTA_MORCEGO_VAMPIRO,
+    "curte vampiro": _RESP_GOSTA_MORCEGO_VAMPIRO,
+    "ama morcego": _RESP_GOSTA_MORCEGO_VAMPIRO,
+    "ama vampiro": _RESP_GOSTA_MORCEGO_VAMPIRO,
+
     # ── Obrigado(a) ──────────────────────────────────────────────
     "obrigad": [
         "de nadaaa!! *faz uma reverência voando* 🦇💜",
@@ -338,6 +364,24 @@ def _extrair_alvo_mencao(message: discord.Message, bot_user: discord.ClientUser)
 
 
 # ══════════════════════════════════════════════════════════════════
+#  🦇  INTERAÇÕES ESPECIAIS COM O DRAW (a cada 30 minutos)
+# ══════════════════════════════════════════════════════════════════
+# sempre que o Draw (DRAW_USER_ID) fala ou cita a Vampy, ela manda uma
+# mensagem personalizada pra ele — mas só uma vez a cada 30 minutos,
+# pra não ficar repetindo em toda mensagem dele
+
+_INTERACOES_DRAW = [
+    "opa, é o Draw!! 🦇🖤 sempre bom te ver por aqui",
+    "*pousa do lado do Draw* e aí, Draw!! tudo certo?? 🦇✨",
+    "hmm, o Draw apareceu... alguém segura minhas asinhas que a arte vai começar 😈🦇",
+    "Draw!! tava pensando em você inclusive, que sincronia 🦇💜",
+    "*acena animada* Draw, meu parceiro de traquinagem preferido!! 😈🦇🖤",
+    "*voa em círculos* olha só quem chegou, o Draw!! 🦇✨",
+    "eu escuto esse nome e já sei, só pode ser o Draw chegando 🦇🌙",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
 #  🦇  COG DE DIÁLOGO — O CORAÇÃO DA VAMPY
 # ══════════════════════════════════════════════════════════════════
 
@@ -358,6 +402,9 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # Cooldown pra não spammar
         self._ultimo_resp: dict[int, datetime] = {}
         self._cooldown_resp = 3   # segundos
+
+        # Cooldown separado só pra interação especial com o Draw
+        self._ultimo_draw: datetime | None = None
 
     def _checar_gatilho(self, texto: str) -> str | None:
         return _checar_gatilho_generico(texto, self.db)
@@ -409,6 +456,23 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
 
             asyncio.create_task(_segunda_mensagem(message.channel))
             return
+
+        # ── Interação especial e personalizada com o Draw ───────────
+        # dispara quando ele fala (ou cita a Vampy), no máximo 1x a
+        # cada 30 minutos — não depende do cooldown normal do canal
+        if message.author.id == DRAW_USER_ID:
+            agora_draw = datetime.now(timezone.utc)
+            cooldown_passou = (
+                self._ultimo_draw is None
+                or (agora_draw - self._ultimo_draw).total_seconds() >= DRAW_COOLDOWN_SEGUNDOS
+            )
+            if cooldown_passou:
+                self._ultimo_draw = agora_draw
+                self._ultimo_resp[message.channel.id] = agora_draw
+                async with message.channel.typing():
+                    await asyncio.sleep(random.uniform(0.6, 1.4))
+                await message.reply(random.choice(_INTERACOES_DRAW), mention_author=False)
+                return
 
         now = datetime.now(timezone.utc)
         ultimo = self._ultimo_resp.get(message.channel.id)
