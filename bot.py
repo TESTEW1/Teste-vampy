@@ -2,7 +2,7 @@
 ╔══════════════════════════════════════════════════════════════════╗
 ║                    🦇  VAMPY BOT  🖤                             ║
 ║             Uma morceguinha alegre e atentada                    ║
-║                         v1.1 — Online                            ║
+║                         v1.2 — Online                            ║
 ╚══════════════════════════════════════════════════════════════════╝
 
 Inspirada na Lilu 🐱 — mesma alma cheia de carinho, agora com asinhas
@@ -12,6 +12,16 @@ peguinhas e responde a galera igualzinho a Lilu faz.
 Módulos:
   • Diálogo — Vampy aprende a conversar, responde gatilhos e
               aparece do nada de vez em quando pra dar as caras
+
+Changelog v1.2:
+  • CORRIGIDO: reply (responder) a uma mensagem de alguém, com a
+    notificação de menção ligada, fazia o Discord incluir aquela
+    pessoa em message.mentions mesmo sem ela ter sido digitada no
+    texto. Isso fazia a Vampy achar que "citaram o Ghost/Draw/etc"
+    só porque alguém respondeu uma mensagem qualquer deles. Agora só
+    contam @menções DIGITADAS de verdade no texto cru da mensagem.
+  • CORRIGIDO: proteção contra processar a mesma mensagem duas vezes
+    (o que causava respostas duplicadas pra mesma mensagem).
 """
 
 import discord
@@ -482,6 +492,31 @@ def _checar_gatilho_generico(texto: str, db: dict) -> str | None:
 
 
 # ══════════════════════════════════════════════════════════════════
+#  🎯  DETECÇÃO DE @MENÇÕES DIGITADAS DE VERDADE
+# ══════════════════════════════════════════════════════════════════
+# CORREÇÃO IMPORTANTE: quando alguém RESPONDE (reply) a uma mensagem
+# de outra pessoa com a notificação de menção ligada (que é o padrão
+# do Discord), aquela pessoa é automaticamente incluída na lista
+# `message.mentions` — mesmo que o texto da resposta não fale nada
+# sobre ela. Se a gente usasse `message.mentions` pra decidir "quem
+# foi citado", a Vampy ia confundir um simples reply (sobre qualquer
+# assunto) com uma citação de propósito. Foi exatamente isso que
+# causou ela reagir com "opa, o Ghost apareceu!!" quando alguém só
+# respondeu uma mensagem do Ghost falando de outra coisa, e reagir
+# como se tivessem citado o Draw quando na verdade não citaram.
+#
+# A solução é olhar direto pro TEXTO CRU da mensagem: uma @menção só
+# conta se ela foi realmente digitada (aparece como <@ID> no texto).
+
+def _ids_mencionados_diretamente(message: discord.Message) -> set[int]:
+    """Retorna os IDs de usuários que foram @mencionados DE VERDADE no
+    texto da mensagem (digitados de propósito), ignorando qualquer
+    menção que só apareça por causa de um reply com notificação
+    ligada."""
+    return {int(uid) for uid in re.findall(r"<@!?(\d+)>", message.content)}
+
+
+# ══════════════════════════════════════════════════════════════════
 #  🦇  APRESENTAÇÃO TÍMIDA — "venha vampy, de oi"
 # ══════════════════════════════════════════════════════════════════
 # quando alguém chama a Vampy especificamente pra ela dar um oi /
@@ -532,21 +567,36 @@ def _eh_pedido_apresentacao(texto: str) -> bool:
 def _extrair_alvo_mencao(message: discord.Message, bot_user: discord.ClientUser) -> str | None:
     """Se o pedido também marca outra pessoa (ex: 'de oi a @Fulano'),
     retorna a menção dela pra Vampy cumprimentar direto. Ignora a
-    própria Vampy e quem pediu (não faz sentido ela se auto-marcar)."""
+    própria Vampy e quem pediu (não faz sentido ela se auto-marcar).
+
+    Só considera @menções DIGITADAS de verdade no texto (ver
+    `_ids_mencionados_diretamente`) — uma menção que apareceu só por
+    causa de um reply não conta como "marcou essa pessoa de propósito".
+    """
+    ids_diretos = _ids_mencionados_diretamente(message)
     outros = [
         u for u in message.mentions
-        if u.id != bot_user.id and u.id != message.author.id
+        if u.id in ids_diretos and u.id != bot_user.id and u.id != message.author.id
     ]
     return outros[0].mention if outros else None
 
 
 def _mensagem_cita_pessoa(message: discord.Message, user_id: int, apelidos: list[str]) -> bool:
     """Verifica se a mensagem cita uma pessoa específica — seja por
-    @menção de verdade (marcou o nome dela no Discord) ou só falando
-    o apelido/nome dela em texto puro (ex: 'manda um oi pro Draw',
-    sem marcar). Usado pra reagir mesmo quando ela é só citada de
-    passagem, não necessariamente marcada."""
-    if any(u.id == user_id for u in message.mentions):
+    @menção DIGITADA de verdade (marcou o nome dela no Discord,
+    escrevendo a menção) ou só falando o apelido/nome dela em texto
+    puro (ex: 'manda um oi pro Draw', sem marcar). Usado pra reagir
+    mesmo quando ela é só citada de passagem, não necessariamente
+    marcada.
+
+    Importante: uma @menção que só apareceu por causa de um reply
+    (você respondeu a uma mensagem de alguém, com a notificação
+    ligada) NÃO conta aqui — senão qualquer resposta a uma mensagem
+    do Ghost, do Draw etc., mesmo sobre outro assunto, seria tratada
+    como "citou ele", e a Vampy reagiria errado (foi exatamente o
+    bug visto no servidor).
+    """
+    if user_id in _ids_mencionados_diretamente(message):
         return True
     texto_lower = message.content.lower()
     return any(
@@ -821,6 +871,13 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # Cooldown separado pras aparições espontâneas ("do nada")
         self._ultimo_espontaneo: datetime | None = None
 
+        # CORREÇÃO: guarda os IDs das últimas mensagens já processadas,
+        # pra nunca responder duas vezes à mesma mensagem — protege
+        # contra o Discord entregar o mesmo evento mais de uma vez
+        # (reconexões do gateway, por exemplo), que foi o que causou a
+        # Vampy mandar duas respostas diferentes pra mesma mensagem
+        self._mensagens_processadas: deque[int] = deque(maxlen=500)
+
     def _checar_gatilho(self, texto: str) -> str | None:
         return _checar_gatilho_generico(texto, self.db)
 
@@ -847,6 +904,14 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         if (message.author.bot and message.author.id != XISPA_USER_ID) or not message.guild:
             return
 
+        # CORREÇÃO: se essa mensagem já foi processada antes (o Discord
+        # às vezes entrega o mesmo evento mais de uma vez, principalmente
+        # depois de reconexões), ignora — evita responder duas vezes à
+        # mesma mensagem
+        if message.id in self._mensagens_processadas:
+            return
+        self._mensagens_processadas.append(message.id)
+
         ctx = await self.bot.get_context(message)
         if ctx.valid:
             return
@@ -858,8 +923,13 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             "time": datetime.now(timezone.utc).isoformat(),
         })
 
+        # CORREÇÃO: usa só @menções DIGITADAS de verdade (ver
+        # `_ids_mencionados_diretamente`) em vez de `message.mentions`,
+        # que também inclui quem foi respondido (reply) sem ter sido
+        # citado de propósito no texto
+        ids_mencionados = _ids_mencionados_diretamente(message)
         vampy_chamada = (
-            self.bot.user in message.mentions
+            self.bot.user.id in ids_mencionados
             or "vampy" in message.content.lower()
         )
 
@@ -891,8 +961,9 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # (não precisa ser ele quem fala), a Vampy aparece dando um
         # chutinho nele — sem cooldown, prioridade máxima depois só da
         # apresentação, pra garantir que ela sempre reage quando ele é
-        # mencionado
-        if any(u.id == XISPA_USER_ID for u in message.mentions):
+        # mencionado. Usa só @menção digitada de verdade (não conta
+        # menção que apareceu só por causa de um reply)
+        if XISPA_USER_ID in ids_mencionados:
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             async with message.channel.typing():
                 await asyncio.sleep(random.uniform(0.4, 1.0))
@@ -901,11 +972,11 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
 
         # ── Elogio automático sempre que o Draw for citado ──────────
         # toda vez que QUALQUER pessoa citar o Draw — seja marcando
-        # com @ ou só falando o nome dele (ex: "dá um oi pro Draw") —
-        # a Vampy já solta uma reação/elogio pra ele na hora, sem
-        # cooldown. Só não dispara quando é o próprio Draw falando,
-        # porque aí quem cuida disso é o bloco de interação dele logo
-        # abaixo (com o cooldown de 30 minutos dele)
+        # com @ de propósito ou só falando o nome dele (ex: "dá um oi
+        # pro Draw") — a Vampy já solta uma reação/elogio pra ele na
+        # hora, sem cooldown. Só não dispara quando é o próprio Draw
+        # falando, porque aí quem cuida disso é o bloco de interação
+        # dele logo abaixo (com o cooldown de 30 minutos dele)
         if message.author.id != DRAW_USER_ID and _mensagem_cita_pessoa(message, DRAW_USER_ID, DRAW_APELIDOS):
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             async with message.channel.typing():
@@ -914,9 +985,10 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             return
 
         # ── Reação automática sempre que o Ghost for citado ─────────
-        # mesma lógica do Draw: se alguém citar o Ghost (por @ ou pelo
-        # nome), a Vampy já reage na hora — exceto quando é o próprio
-        # Ghost falando, que cai no bloco dele mais abaixo
+        # mesma lógica do Draw: se alguém citar o Ghost (por @ de
+        # propósito ou pelo nome), a Vampy já reage na hora — exceto
+        # quando é o próprio Ghost falando, que cai no bloco dele mais
+        # abaixo
         if message.author.id != GHOST_USER_ID and _mensagem_cita_pessoa(message, GHOST_USER_ID, GHOST_APELIDOS):
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             async with message.channel.typing():
@@ -925,10 +997,10 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             return
 
         # ── Reação automática sempre que a namorada do Ghost for citada ──
-        # mesma lógica do Draw e do Ghost: se alguém citar ela (por @ ou
-        # pelo nome, se você preencher GHOST_NAMORADA_APELIDOS), a Vampy
-        # já reage na hora — exceto quando é ela mesma falando, que cai
-        # no bloco dela mais abaixo
+        # mesma lógica do Draw e do Ghost: se alguém citar ela (por @ de
+        # propósito ou pelo nome, se você preencher GHOST_NAMORADA_APELIDOS),
+        # a Vampy já reage na hora — exceto quando é ela mesma falando,
+        # que cai no bloco dela mais abaixo
         if message.author.id != GHOST_NAMORADA_USER_ID and _mensagem_cita_pessoa(message, GHOST_NAMORADA_USER_ID, GHOST_NAMORADA_APELIDOS):
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             async with message.channel.typing():
