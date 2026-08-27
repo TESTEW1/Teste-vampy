@@ -563,6 +563,21 @@ _INTERACOES_XISPA = [
     "*aponta de longe* esse aí não foi chamado não, gente... xispa!! 😈🦇",
 ]
 
+# reação especial sempre que XISPA_USER_ID for CITADO/MARCADO por
+# qualquer pessoa na mensagem (não precisa ser ele quem fala) — a
+# Vampy aparece do nada só pra dar um chutinho nele, sem cooldown,
+# tem prioridade máxima logo depois da apresentação
+_INTERACOES_XISPA_CHUTE = [
+    "*aparece do nada e dá um chute nele* toma, bem feito 😹🦇👢",
+    "*voa rapidinho, chuta ele e some de novo* leva isso!! 😈🦇",
+    "psiu, deixa que eu resolvo... *chuta* 🦇👢😹",
+    "*pousa do lado dele só pra dar um chutinho e sair voando* 😈🦇",
+    "ninguém pediu, mas toma um chute a mais da minha parte 😹🦇👢",
+    "*prepara a asinha e dá um voadora nele* aiii que dó (mentira) 😈🦇",
+    "*chega chutando* sempre bom fazer companhia nessas horas 🦇👢🖤",
+    "*dá uma rasteira nele antes do chute, só de bônus* 😹🦇👢",
+]
+
 
 # ══════════════════════════════════════════════════════════════════
 #  🦇  INTERAÇÕES ESPECIAIS COM O GHOST (a cada 30 minutos)
@@ -602,6 +617,80 @@ def _contem_gatilho_tiro(texto: str) -> bool:
         re.search(r"\b" + re.escape(palavra) + r"\b", texto_lower)
         for palavra in _GATILHOS_TIRO_GHOST
     )
+
+
+# ══════════════════════════════════════════════════════════════════
+#  🦇  RESPOSTAS PRA ATAQUES EM GERAL (fogo, facada, tiro)
+# ══════════════════════════════════════════════════════════════════
+# diferente da piada específica do Ghost lá em cima, isso aqui vale
+# pra QUALQUER pessoa que mandar esse tipo de mensagem — ex: "Vampy
+# ateia fogo no Fulano", "dá uma facada nele", "manda bala no Fulano"
+# etc. Se a mensagem citar/marcar alguém (@menção), a Vampy usa o
+# nome dessa pessoa na resposta; senão, usa uma resposta genérica
+
+_GATILHOS_ATAQUE = {
+    "fogo": [
+        "atear fogo", "ateia fogo", "ateie fogo", "atear fogo em", "coloca fogo",
+        "colocou fogo", "põe fogo", "poe fogo", "botar fogo", "botou fogo",
+        "pega fogo", "toca fogo", "queima ele", "queima ela", "incendeia",
+        "incendiar",
+    ],
+    "faca": [
+        "facada", "facadas", "esfaqueia", "esfaqueou", "esfaquear",
+        "apunhala", "apunhalou", "apunhalar", "enfia a faca", "mete a faca",
+    ],
+    "tiro": _GATILHOS_TIRO_GHOST + [
+        "dá um tiro", "de um tiro", "dê um tiro", "manda bala", "atira nele",
+        "atira nela", "atirar nele", "atirar nela",
+    ],
+}
+
+_RESPOSTAS_ATAQUE_COM_ALVO = {
+    "fogo": [
+        "*acende um fósforo do nada e ateia fogo em {alvo}* PEGOU FOGO!! 😈🔥🦇",
+        "*voa em volta de {alvo} soltando fagulhas* arde, arde!! 🔥🦇😹",
+        "com prazer!! *ateia fogo em {alvo}* pronto, tá quentinho agora 😈🔥🦇",
+        "*risada maligna* {alvo} vai virar churrasquinho hoje 🔥🦇😈",
+        "*bafo de fogo* nem sabia que sabia fazer isso, mas {alvo} que se cuide 🔥🦇",
+    ],
+    "faca": [
+        "*saca uma faquinha do nada e vai pra cima de {alvo}* toma!! 🔪🦇😈",
+        "com todo prazer!! *dá uma facadinha de leve em {alvo}* 🔪🦇",
+        "*afia as garrinhas ao invés de faca* {alvo} nem vai sentir (mentira) 😈🦇🔪",
+        "prontinho!! *espeta {alvo} de leve e sai voando rindo* 🔪🦇😹",
+    ],
+    "tiro": [
+        "*saca uma arminha de brinquedo e mira em {alvo}* BANG!! 🔫🦇😈",
+        "com certeza!! *atira em {alvo} e sai voando rindo* 😹🔫🦇",
+        "*mira certeira* toma, {alvo}!! 🔫🦇✨",
+        "pow pow!! *atira em {alvo} e esconde a arminha de volta* 😈🔫🦇",
+    ],
+}
+
+_RESPOSTAS_ATAQUE_SEM_ALVO = {
+    "fogo": [
+        "*ateia fogo em alguém aleatório* alguém pediu incêndio?? 🔥🦇😈",
+        "*bafo de fogo pra todo lado* cuidado, hoje eu tô com fósforo na asa 🔥🦇",
+    ],
+    "faca": [
+        "*saca uma faquinha e fica de olho em quem vai ser a vítima* 🔪🦇😈",
+        "hmm, alguém vai levar uma facadinha hoje... quem será?? 🔪🦇",
+    ],
+    "tiro": [
+        "*saca uma arminha de brinquedo e fica de olho em todo mundo* 🔫🦇😈",
+        "pow pow!! *atira pro alto só de brincadeira* 🔫🦇✨",
+    ],
+}
+
+
+def _checar_gatilho_ataque(texto: str) -> str | None:
+    texto_lower = texto.lower()
+    for tipo, palavras in _GATILHOS_ATAQUE.items():
+        for palavra in palavras:
+            padrao = r"\b" + re.escape(palavra) + r"\b"
+            if re.search(padrao, texto_lower):
+                return tipo
+    return None
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -735,6 +824,19 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             asyncio.create_task(_segunda_mensagem(message.channel))
             return
 
+        # ── Chute automático sempre que XISPA_USER_ID for citado ────
+        # toda vez que QUALQUER pessoa marcar/citar esse ID na mensagem
+        # (não precisa ser ele quem fala), a Vampy aparece dando um
+        # chutinho nele — sem cooldown, prioridade máxima depois só da
+        # apresentação, pra garantir que ela sempre reage quando ele é
+        # mencionado
+        if any(u.id == XISPA_USER_ID for u in message.mentions):
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.4, 1.0))
+            await message.reply(random.choice(_INTERACOES_XISPA_CHUTE), mention_author=False)
+            return
+
         # ── Interação especial e personalizada com o Draw ───────────
         # dispara quando ele fala (ou cita a Vampy), no máximo 1x a
         # cada 30 minutos — não depende do cooldown normal do canal.
@@ -773,6 +875,22 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                     await asyncio.sleep(random.uniform(0.6, 1.4))
                 await message.reply(random.choice(_INTERACOES_GHOST), mention_author=False)
                 return
+
+        # ── Respostas pra ataques em geral (fogo, facada, tiro) ─────
+        # vale pra qualquer pessoa (ex: "Vampy ateia fogo no Fulano",
+        # "de uma facada no Fulano") — se citar alguém, usa o nome dele
+        tipo_ataque = _checar_gatilho_ataque(message.content)
+        if tipo_ataque:
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            alvo = _extrair_alvo_mencao(message, self.bot.user)
+            if alvo:
+                resposta_ataque = random.choice(_RESPOSTAS_ATAQUE_COM_ALVO[tipo_ataque]).format(alvo=alvo)
+            else:
+                resposta_ataque = random.choice(_RESPOSTAS_ATAQUE_SEM_ALVO[tipo_ataque])
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.5, 1.2))
+            await message.reply(resposta_ataque, mention_author=False)
+            return
 
         # ── Zoeira automática com o alvo de sempre ──────────────────
         # sempre que XISPA_USER_ID manda mensagem, a Vampy zoa na hora,
