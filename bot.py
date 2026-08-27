@@ -41,6 +41,10 @@ DIALOGO_FILE = "vampy_dialogo.json"
 DRAW_USER_ID = 763467697069359143
 DRAW_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
 
+# aparições espontâneas ("do nada", sem ninguém chamar) — raras de
+# propósito, no máximo 1 a cada ~13 horas, com ou sem citar alguém
+APARICAO_ESPONTANEA_COOLDOWN_SEGUNDOS = 13 * 60 * 60  # 13 horas
+
 # ══════════════════════════════════════════════════════════════════
 #  🤖  SETUP DO BOT
 # ══════════════════════════════════════════════════════════════════
@@ -382,6 +386,42 @@ _INTERACOES_DRAW = [
 
 
 # ══════════════════════════════════════════════════════════════════
+#  🦇  APARIÇÕES ESPONTÂNEAS ("do nada") — raras de propósito
+# ══════════════════════════════════════════════════════════════════
+# sem ninguém chamar, sem gatilho batendo — a Vampy só aparece do
+# nada de vez em quando. Isso é raro por natureza (no máximo 1x a
+# cada ~13h, ver APARICAO_ESPONTANEA_COOLDOWN_SEGUNDOS), pra manter
+# o efeito surpresa e não virar spam
+
+_EXPRESSOES_ESPONTANEAS = [
+    "*aparece do nada* boo!! 🦇✨",
+    "*surge pendurada no teto* oi, gente!! 🦇🖤",
+    "*voa passando rapidinho* nham!! 😈🦇",
+    "*se esconde atrás de alguém e espia* 👀🦇",
+    "*bate as asinhas distraída* 🦇💜",
+    "hihihi tô só observando por aqui!! 😈🦇",
+    "*pendura de cabeça pra baixo num canto* 🦇🌙",
+    "*aparece do nada e some de novo* boo!! 🦇💨",
+    "psiu... alguém quer aprontar comigo?? 😈🦇",
+    "*mostra as presinhas num sorriso* 🦇✨",
+    "*rodopia no ar toda animada* 🦇🖤",
+    "hm... o que será que eu posso aprontar hoje?? 😈🦇",
+]
+
+# variações usadas quando ela "escolhe" alguém que falou recentemente
+# no canal pra aparecer do nada perto dele/dela — pra ela também
+# interagir espontaneamente com outras pessoas, não só o Draw
+_EXPRESSOES_ESPONTANEAS_COM_ALVO = [
+    "*aparece do nada e pousa do lado de {pessoa}* boo!! 🦇✨",
+    "*surge bem perto de {pessoa} só pra espiar* 👀🦇",
+    "*voa até {pessoa} e some rapidinho* nham!! 😈🦇",
+    "*se pendura de cabeça pra baixo perto de {pessoa}* oi!! 🦇🌙",
+    "psiu, {pessoa}... quer aprontar comigo?? 😈🦇",
+    "*cochicha alguma coisa no ouvido de {pessoa} e some* 🦇💨",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
 #  🦇  COG DE DIÁLOGO — O CORAÇÃO DA VAMPY
 # ══════════════════════════════════════════════════════════════════
 
@@ -406,12 +446,25 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # Cooldown separado só pra interação especial com o Draw
         self._ultimo_draw: datetime | None = None
 
+        # Cooldown separado pras aparições espontâneas ("do nada")
+        self._ultimo_espontaneo: datetime | None = None
+
     def _checar_gatilho(self, texto: str) -> str | None:
         return _checar_gatilho_generico(texto, self.db)
 
     def _responder(self, chave: str) -> str:
         resps = self.db["respostas"].get(chave, [])
         return random.choice(resps) if resps else ""
+
+    def _escolher_pessoa_aleatoria(self, channel_id: int, excluir_id: int) -> str | None:
+        """Pega o nome de alguém que falou recentemente no canal (do
+        contexto guardado) pra Vampy aparecer do nada perto dela.
+        Retorna None se não tiver ninguém no contexto ainda."""
+        candidatos = [
+            msg["user"] for msg in self._contexto[channel_id]
+            if msg["user_id"] != excluir_id
+        ]
+        return random.choice(candidatos) if candidatos else None
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -515,26 +568,28 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             await message.reply(random.choice(respostas_genericas), mention_author=False)
             return
 
-        # ── Aparece do nada (chance baixa, sem precisar ser chamada) ──
-        elif not vampy_chamada and not chave and random.random() < 0.02:
-            _EXPRESSOES_ESPONTANEAS = [
-                "*aparece do nada* boo!! 🦇✨",
-                "*surge pendurada no teto* oi, gente!! 🦇🖤",
-                "*voa passando rapidinho* nham!! 😈🦇",
-                "*se esconde atrás de alguém e espia* 👀🦇",
-                "*bate as asinhas distraída* 🦇💜",
-                "hihihi tô só observando por aqui!! 😈🦇",
-                "*pendura de cabeça pra baixo num canto* 🦇🌙",
-                "*aparece do nada e some de novo* boo!! 🦇💨",
-                "psiu... alguém quer aprontar comigo?? 😈🦇",
-                "*mostra as presinhas num sorriso* 🦇✨",
-                "*rodopia no ar toda animada* 🦇🖤",
-                "hm... o que será que eu posso aprontar hoje?? 😈🦇",
-            ]
-            self._ultimo_resp[message.channel.id] = now
-            async with message.channel.typing():
-                await asyncio.sleep(random.uniform(0.3, 0.9))
-            await message.channel.send(random.choice(_EXPRESSOES_ESPONTANEAS))
+        # ── Aparece do nada (rara de propósito — no máx. 1x a cada ~13h) ──
+        elif not vampy_chamada and not chave:
+            agora_esp = datetime.now(timezone.utc)
+            cooldown_espontaneo_ok = (
+                self._ultimo_espontaneo is None
+                or (agora_esp - self._ultimo_espontaneo).total_seconds() >= APARICAO_ESPONTANEA_COOLDOWN_SEGUNDOS
+            )
+            # o cooldown de 13h já garante que isso é raro; a chance de
+            # 5% por mensagem só espalha o "quando exato" dentro da janela
+            if cooldown_espontaneo_ok and random.random() < 0.05:
+                self._ultimo_espontaneo = agora_esp
+                self._ultimo_resp[message.channel.id] = agora_esp
+
+                pessoa = self._escolher_pessoa_aleatoria(message.channel.id, message.author.id)
+                if pessoa and random.random() < 0.5:
+                    texto_espontaneo = random.choice(_EXPRESSOES_ESPONTANEAS_COM_ALVO).format(pessoa=pessoa)
+                else:
+                    texto_espontaneo = random.choice(_EXPRESSOES_ESPONTANEAS)
+
+                async with message.channel.typing():
+                    await asyncio.sleep(random.uniform(0.3, 0.9))
+                await message.channel.send(texto_espontaneo)
 
     # ── Comandos de aprendizado ────────────────────────────
 
