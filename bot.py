@@ -301,6 +301,16 @@ _APRESENTACAO_TIMIDA_INICIAL = [
     "*pousa bem quietinha, olhando de canto* oi... desculpa, fico meio tímida às vezes 🦇🖤",
 ]
 
+# variações usadas quando o pedido também marca um @alguém específico
+# (ex: "venha vampy, de oi a @Fulano") — ela cumprimenta esse alvo direto
+_APRESENTACAO_TIMIDA_INICIAL_COM_ALVO = [
+    "*desce voando bem tímida e pousa pertinho* oi, {alvo}... 🦇🖤",
+    "*se esconde um pouquinho, mas espia* oi {alvo}... eu sou a Vampy 🦇💜",
+    "*chega quase sem fazer barulho* o-oi {alvo}... 🦇🌙",
+    "*acena bem de leve, meio sem graça* oi {alvo}!! 🦇✨",
+    "*pousa do ladinho, olhando de canto* oi {alvo}... prazer 🦇🖤",
+]
+
 _APRESENTACAO_TIMIDA_SEGUNDA = [
     "eu estou feliz em estar aqui de novo... 🦇💜",
     "fico feliz de poder aparecer aqui de novo!! 🦇🖤",
@@ -314,6 +324,17 @@ def _eh_pedido_apresentacao(texto: str) -> bool:
     if "vampy" not in texto_lower:
         return False
     return any(pedido in texto_lower for pedido in _PEDIDOS_APRESENTACAO)
+
+
+def _extrair_alvo_mencao(message: discord.Message, bot_user: discord.ClientUser) -> str | None:
+    """Se o pedido também marca outra pessoa (ex: 'de oi a @Fulano'),
+    retorna a menção dela pra Vampy cumprimentar direto. Ignora a
+    própria Vampy e quem pediu (não faz sentido ela se auto-marcar)."""
+    outros = [
+        u for u in message.mentions
+        if u.id != bot_user.id and u.id != message.author.id
+    ]
+    return outros[0].mention if outros else None
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -367,13 +388,19 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         )
 
         # ── Pedido de apresentação tímida (prioridade máxima) ──────
-        # ex: "Venha vampy, de oi" — ignora o cooldown normal porque
-        # é um pedido direto e específico
+        # ex: "Venha vampy, de oi" ou "Venha vampy, de oi a @Fulano"
+        # — ignora o cooldown normal porque é um pedido direto e específico
         if _eh_pedido_apresentacao(message.content):
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             async with message.channel.typing():
                 await asyncio.sleep(random.uniform(0.8, 1.6))
-            await message.reply(random.choice(_APRESENTACAO_TIMIDA_INICIAL), mention_author=False)
+
+            alvo = _extrair_alvo_mencao(message, self.bot.user)
+            if alvo:
+                resposta_inicial = random.choice(_APRESENTACAO_TIMIDA_INICIAL_COM_ALVO).format(alvo=alvo)
+            else:
+                resposta_inicial = random.choice(_APRESENTACAO_TIMIDA_INICIAL)
+            await message.reply(resposta_inicial, mention_author=False)
 
             async def _segunda_mensagem(channel: discord.abc.Messageable):
                 async with channel.typing():
