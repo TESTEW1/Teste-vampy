@@ -40,6 +40,9 @@ DIALOGO_FILE = "vampy_dialogo.json"
 # a 1 a cada 30 minutos, pra não ficar repetitivo)
 DRAW_USER_ID = 763467697069359143
 DRAW_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
+# apelidos/nomes usados pra reconhecer quando alguém CITA o Draw em
+# texto puro, sem necessariamente marcar com @ (ex: "dá um oi pro Draw")
+DRAW_APELIDOS = ["draw"]
 
 # ID de alguém que a Vampy sempre zoa quando ele fala — reação na hora,
 # sem cooldown, do jeitinho encrenqueira dela ("xispa daqui" etc.)
@@ -49,6 +52,9 @@ XISPA_USER_ID = 1374346793957064735
 # personalizadas (limitadas a 1 a cada 30 minutos, pra não repetir)
 GHOST_USER_ID = 1077952035099512923
 GHOST_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
+# apelidos/nomes usados pra reconhecer quando alguém CITA o Ghost em
+# texto puro, sem necessariamente marcar com @ (ex: "chama o Ghost aí")
+GHOST_APELIDOS = ["ghost"]
 
 # aparições espontâneas ("do nada", sem ninguém chamar) — raras de
 # propósito, no máximo 1 a cada ~13 horas, com ou sem citar alguém
@@ -525,6 +531,21 @@ def _extrair_alvo_mencao(message: discord.Message, bot_user: discord.ClientUser)
     return outros[0].mention if outros else None
 
 
+def _mensagem_cita_pessoa(message: discord.Message, user_id: int, apelidos: list[str]) -> bool:
+    """Verifica se a mensagem cita uma pessoa específica — seja por
+    @menção de verdade (marcou o nome dela no Discord) ou só falando
+    o apelido/nome dela em texto puro (ex: 'manda um oi pro Draw',
+    sem marcar). Usado pra reagir mesmo quando ela é só citada de
+    passagem, não necessariamente marcada."""
+    if any(u.id == user_id for u in message.mentions):
+        return True
+    texto_lower = message.content.lower()
+    return any(
+        re.search(r"\b" + re.escape(apelido) + r"\b", texto_lower)
+        for apelido in apelidos
+    )
+
+
 # ══════════════════════════════════════════════════════════════════
 #  🦇  INTERAÇÕES ESPECIAIS COM O DRAW (a cada 30 minutos)
 # ══════════════════════════════════════════════════════════════════
@@ -540,6 +561,10 @@ _INTERACOES_DRAW = [
     "*acena animada* Draw, meu parceiro de traquinagem preferido!! 😈🦇🖤",
     "*voa em círculos* olha só quem chegou, o Draw!! 🦇✨",
     "eu escuto esse nome e já sei, só pode ser o Draw chegando 🦇🌙",
+    "*sorri toda boba* o Draw é praticamente da família aqui, sabia?? 🦇💜",
+    "Draw!! um dos poucos que eu realmente gosto de ver por aqui 😈🦇🖤",
+    "*se pendura pertinho dele* o Draw sempre traz um clima bom quando aparece 🦇✨",
+    "esse aí é gente boa demais, olha só, o Draw!! 🦇🖤",
 ]
 
 
@@ -594,6 +619,8 @@ _INTERACOES_GHOST = [
     "*acena animada* olha só quem chegou, o Ghost!! 😈🦇🖤",
     "*voa em círculos* Ghost na área, cuidado gente!! 🦇✨",
     "eu escuto esse nome e já sei, só pode ser o Ghost chegando 🦇🌙",
+    "*se esconde atrás dele rindo* o Ghost é parceiro de arte oficial 😈🦇🖤",
+    "esse aí é gente boa, olha só, o Ghost!! 🦇✨",
 ]
 
 # palavras-chave que disparam a reação especial quando o Ghost faz a
@@ -835,6 +862,31 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             async with message.channel.typing():
                 await asyncio.sleep(random.uniform(0.4, 1.0))
             await message.reply(random.choice(_INTERACOES_XISPA_CHUTE), mention_author=False)
+            return
+
+        # ── Elogio automático sempre que o Draw for citado ──────────
+        # toda vez que QUALQUER pessoa citar o Draw — seja marcando
+        # com @ ou só falando o nome dele (ex: "dá um oi pro Draw") —
+        # a Vampy já solta uma reação/elogio pra ele na hora, sem
+        # cooldown. Só não dispara quando é o próprio Draw falando,
+        # porque aí quem cuida disso é o bloco de interação dele logo
+        # abaixo (com o cooldown de 30 minutos dele)
+        if message.author.id != DRAW_USER_ID and _mensagem_cita_pessoa(message, DRAW_USER_ID, DRAW_APELIDOS):
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.4, 1.0))
+            await message.reply(random.choice(_INTERACOES_DRAW), mention_author=False)
+            return
+
+        # ── Reação automática sempre que o Ghost for citado ─────────
+        # mesma lógica do Draw: se alguém citar o Ghost (por @ ou pelo
+        # nome), a Vampy já reage na hora — exceto quando é o próprio
+        # Ghost falando, que cai no bloco dele mais abaixo
+        if message.author.id != GHOST_USER_ID and _mensagem_cita_pessoa(message, GHOST_USER_ID, GHOST_APELIDOS):
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.4, 1.0))
+            await message.reply(random.choice(_INTERACOES_GHOST), mention_author=False)
             return
 
         # ── Interação especial e personalizada com o Draw ───────────
