@@ -2,7 +2,7 @@
 ╔══════════════════════════════════════════════════════════════════╗
 ║                    🦇  VAMPY BOT  🖤                             ║
 ║             Uma morceguinha alegre e atentada                    ║
-║                         v1.2 — Online                            ║
+║                         v1.3 — Online                            ║
 ╚══════════════════════════════════════════════════════════════════╝
 
 Inspirada na Lilu 🐱 — mesma alma cheia de carinho, agora com asinhas
@@ -12,6 +12,20 @@ peguinhas e responde a galera igualzinho a Lilu faz.
 Módulos:
   • Diálogo — Vampy aprende a conversar, responde gatilhos e
               aparece do nada de vez em quando pra dar as caras
+
+Changelog v1.3:
+  • CORRIGIDO: as reações personalizadas de "opa, chegou o Fulano!!"
+    (Draw, Ghost, namorada do Ghost, Dalia, Orochi, Felipe) estavam
+    disparando sempre que alguém MARCAVA essas pessoas com @menção
+    dentro de uma mensagem qualquer — mesmo quando a mensagem não
+    tinha nada a ver com elas terem chegado/falado. Exemplo real: o
+    Felipe mandou "Vampy joga uma bomba atômica no @Draw Mori" e a
+    Vampy respondeu "olha só quem chegou, o Draw!!", como se o Draw
+    tivesse acabado de aparecer — só porque o nome dele foi citado
+    como ALVO da mensagem de outra pessoa, não porque ele mesmo
+    escreveu algo. Agora essas reações de "chegou fulano" só disparam
+    quando é a PRÓPRIA pessoa (dono do ID) quem manda a mensagem —
+    ser apenas citado/marcado por outra pessoa não conta mais.
 
 Changelog v1.2:
   • CORRIGIDO: reply (responder) a uma mensagem de alguém, com a
@@ -54,11 +68,14 @@ TOKEN = os.getenv("VAMPY_TOKEN") or os.getenv("TOKEN")
 DIALOGO_FILE = "vampy_dialogo.json"
 
 # ID do Draw — recebe interações especiais e personalizadas (limitadas
-# a 1 a cada 30 minutos, pra não ficar repetitivo)
+# a 1 a cada 30 minutos, pra não ficar repetitivo). IMPORTANTE: essa
+# interação especial ("opa, chegou o Draw!!") só dispara quando é o
+# PRÓPRIO Draw quem manda a mensagem — ser apenas citado/@marcado por
+# outra pessoa não conta mais (ver changelog v1.3)
 DRAW_USER_ID = 763467697069359143
 DRAW_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
-# apelidos/nomes usados pra reconhecer quando alguém CITA o Draw em
-# texto puro, sem necessariamente marcar com @ (ex: "dá um oi pro Draw")
+# apelidos/nomes do Draw — mantidos apenas como referência/utilitário,
+# não são mais usados pra disparar a reação de "chegou" por citação
 DRAW_APELIDOS = ["draw"]
 
 # ID de alguém que a Vampy sempre zoa quando ele fala — reação na hora,
@@ -66,44 +83,47 @@ DRAW_APELIDOS = ["draw"]
 XISPA_USER_ID = 1374346793957064735
 
 # ID do Ghost — assim como o Draw, recebe interações especiais e
-# personalizadas (limitadas a 1 a cada 30 minutos, pra não repetir)
+# personalizadas (limitadas a 1 a cada 30 minutos, pra não repetir).
+# IMPORTANTE: só dispara quando é o PRÓPRIO Ghost quem manda a
+# mensagem — ser apenas citado/@marcado por outra pessoa não conta
+# mais (ver changelog v1.3)
 GHOST_USER_ID = 1077952035099512923
 GHOST_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
-# apelidos/nomes usados pra reconhecer quando alguém CITA o Ghost em
-# texto puro, sem necessariamente marcar com @ (ex: "chama o Ghost aí")
+# apelidos/nomes do Ghost — mantidos apenas como referência/utilitário,
+# não são mais usados pra disparar a reação de "chegou" por citação
 GHOST_APELIDOS = ["ghost"]
 
 # ID da namorada do Ghost — mesma lógica de interação especial que o
-# Draw e o Ghost têm (limitada a 1 a cada 30 minutos, pra não repetir)
+# Draw e o Ghost têm (limitada a 1 a cada 30 minutos, pra não repetir).
+# Só dispara quando é ela mesma quem fala (ver changelog v1.3)
 GHOST_NAMORADA_USER_ID = 757956601020940338
 GHOST_NAMORADA_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
-# apelidos/nomes usados pra reconhecer quando alguém CITA ela em texto
-# puro, sem marcar com @ — deixe vazio se não tiver um apelido fixo
-# pra usar aqui (ex: GHOST_NAMORADA_APELIDOS = ["nomeDela"])
+# apelidos/nomes usados só como referência — deixe vazio se não tiver
+# um apelido fixo pra usar aqui (ex: GHOST_NAMORADA_APELIDOS = ["nomeDela"])
 GHOST_NAMORADA_APELIDOS = []
 
 # ID da Dalia — líder do clã, recebe interações especiais e
-# personalizadas (limitadas a 1 a cada 30 minutos, pra não repetir)
+# personalizadas (limitadas a 1 a cada 30 minutos, pra não repetir).
+# Só dispara quando é ela mesma quem fala (ver changelog v1.3)
 DALIA_USER_ID = 1403092977802412042
 DALIA_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
-# apelidos/nomes usados pra reconhecer quando alguém CITA a Dalia em
-# texto puro, sem necessariamente marcar com @ (ex: "chama a Dalia aí")
+# apelidos/nomes usados só como referência/utilitário
 DALIA_APELIDOS = ["dalia", "dália"]
 
 # ID da Orochi — recebe interações especiais e personalizadas
-# (limitadas a 1 a cada 30 minutos, pra não repetir)
+# (limitadas a 1 a cada 30 minutos, pra não repetir). Só dispara
+# quando é ela mesma quem fala (ver changelog v1.3)
 OROCHI_USER_ID = 1248748685060345969
 OROCHI_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
-# apelidos/nomes usados pra reconhecer quando alguém CITA a Orochi em
-# texto puro, sem necessariamente marcar com @ (ex: "chama a Orochi aí")
+# apelidos/nomes usados só como referência/utilitário
 OROCHI_APELIDOS = ["orochi"]
 
 # ID do Felipe — mod do servidor, recebe interações especiais e
-# personalizadas (limitadas a 1 a cada 30 minutos, pra não repetir)
+# personalizadas (limitadas a 1 a cada 30 minutos, pra não repetir).
+# Só dispara quando é ele mesmo quem fala (ver changelog v1.3)
 FELIPE_USER_ID = 1466109068371431616
 FELIPE_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
-# apelido usado só como referência (a citação por outra pessoa usa
-# apenas @menção digitada de verdade, ver comentário mais abaixo)
+# apelido usado só como referência/utilitário
 FELIPE_APELIDOS = ["felipe"]
 
 # aparições espontâneas ("do nada", sem ninguém chamar) — raras de
@@ -551,6 +571,17 @@ def _checar_gatilho_generico(texto: str, db: dict) -> str | None:
 #
 # A solução é olhar direto pro TEXTO CRU da mensagem: uma @menção só
 # conta se ela foi realmente digitada (aparece como <@ID> no texto).
+#
+# IMPORTANTE (v1.3): mesmo uma @menção digitada de propósito não é
+# garantia de que a pessoa "chegou" ou "está ali" — alguém pode digitar
+# @Draw só pra falar SOBRE ele ou mandar uma AÇÃO nele (ex: "Vampy joga
+# uma bomba atômica no @Draw"), sem o Draw ter dito nada. Por isso as
+# reações de "opa, chegou fulano!!" (Draw, Ghost, namorada do Ghost,
+# Dalia, Orochi, Felipe) agora só disparam quando é a própria pessoa
+# (dono do ID) quem envia a mensagem — ver on_message mais abaixo.
+# `_ids_mencionados_diretamente` continua existindo e sendo usado pra
+# outras coisas (extrair o alvo de uma peça/ataque, por exemplo), só
+# não é mais usado pra decidir "essa pessoa chegou".
 
 def _ids_mencionados_diretamente(message: discord.Message) -> set[int]:
     """Retorna os IDs de usuários que foram @mencionados DE VERDADE no
@@ -629,24 +660,16 @@ def _mensagem_cita_pessoa(message: discord.Message, user_id: int, apelidos: list
     """Verifica se a mensagem cita uma pessoa específica — seja por
     @menção DIGITADA de verdade (marcou o nome dela no Discord,
     escrevendo a menção) ou só falando o apelido/nome dela em texto
-    puro (ex: 'manda um oi pro Draw', sem marcar). Usado pra reagir
-    mesmo quando ela é só citada de passagem, não necessariamente
-    marcada.
+    puro (ex: 'manda um oi pro Draw', sem marcar).
 
-    Importante: uma @menção que só apareceu por causa de um reply
-    (você respondeu a uma mensagem de alguém, com a notificação
-    ligada) NÃO conta aqui — senão qualquer resposta a uma mensagem
-    do Ghost, do Draw etc., mesmo sobre outro assunto, seria tratada
-    como "citou ele", e a Vampy reagiria errado (foi exatamente o
-    bug visto no servidor).
-
-    NOTA: essa função não é mais usada pra decidir a reação especial
-    de "fulano foi citado por OUTRA pessoa" (ver on_message) — lá
-    agora só conta @menção digitada de verdade, porque o apelido em
-    texto puro dava falso-positivo demais (ex: alguém só comentando
-    "a orochi é muito ativa" sem estar chamando/marcando ela).
-    Mantida aqui só como utilitária, caso outra parte do código queira
-    reaproveitar essa checagem por nome no futuro.
+    NOTA (v1.3): essa função NÃO é usada pra decidir a reação de
+    "fulano chegou" (ver on_message) — mesmo uma @menção digitada de
+    propósito não significa que a pessoa está de fato ali/falando, ela
+    pode só estar sendo citada como alvo de uma ação de outra pessoa
+    (ex: "joga uma bomba atômica no @Fulano"). A reação de "chegou"
+    agora depende só de `message.author.id == user_id`. Mantida aqui
+    só como utilitária, caso outra parte do código queira reaproveitar
+    essa checagem por nome no futuro.
     """
     if user_id in _ids_mencionados_diretamente(message):
         return True
@@ -761,9 +784,8 @@ def _contem_gatilho_tiro(texto: str) -> bool:
 #  🦇  INTERAÇÕES ESPECIAIS COM A NAMORADA DO GHOST (a cada 30 min)
 # ══════════════════════════════════════════════════════════════════
 # mesma lógica do Draw e do Ghost: sempre que ela (GHOST_NAMORADA_USER_ID)
-# fala, ou é citada por alguém, a Vampy manda uma mensagem personalizada
-# — com uma zoeirinha extra por ela namorar o Ghost — no máximo 1x a
-# cada 30 minutos quando é ela quem fala
+# fala, a Vampy manda uma mensagem personalizada — com uma zoeirinha
+# extra por ela namorar o Ghost — no máximo 1x a cada 30 minutos
 
 _INTERACOES_GHOST_NAMORADA = [
     "opa, chegou a namorada do Ghost!! 🦇💕",
@@ -779,9 +801,9 @@ _INTERACOES_GHOST_NAMORADA = [
 #  🦇  INTERAÇÕES ESPECIAIS COM A DALIA (líder do clã, a cada 30 min)
 # ══════════════════════════════════════════════════════════════════
 # mesma lógica do Draw, Ghost e namorada do Ghost: sempre que a Dalia
-# (DALIA_USER_ID) fala, ou é citada por alguém, a Vampy manda uma
-# mensagem personalizada — um pouco mais respeitosa, já que ela é a
-# líder do clã — no máximo 1x a cada 30 minutos quando é ela quem fala
+# (DALIA_USER_ID) fala, a Vampy manda uma mensagem personalizada — um
+# pouco mais respeitosa, já que ela é a líder do clã — no máximo 1x a
+# cada 30 minutos
 
 _INTERACOES_DALIA = [
     "opa, a Dalia apareceu!! *se ajeita toda comportada* 🦇🖤",
@@ -800,9 +822,8 @@ _INTERACOES_DALIA = [
 #  🦇  INTERAÇÕES ESPECIAIS COM A OROCHI (a cada 30 minutos)
 # ══════════════════════════════════════════════════════════════════
 # mesma lógica do Draw, Ghost e Dalia: sempre que a Orochi
-# (OROCHI_USER_ID) fala, ou é citada por alguém, a Vampy manda uma
-# mensagem personalizada — no máximo 1x a cada 30 minutos quando é
-# ela quem fala
+# (OROCHI_USER_ID) fala, a Vampy manda uma mensagem personalizada —
+# no máximo 1x a cada 30 minutos
 
 _INTERACOES_OROCHI = [
     "opa, a Orochi apareceu!! 🦇🐍",
@@ -820,9 +841,8 @@ _INTERACOES_OROCHI = [
 # ══════════════════════════════════════════════════════════════════
 # mesma lógica da Dalia: o Felipe (FELIPE_USER_ID) é mod do servidor,
 # então a Vampy trata ele com um pouco mais de respeito/comportada,
-# mas sem perder a marra — dispara quando ele fala, ou é citado por
-# alguém via @menção de verdade, no máximo 1x a cada 30 minutos
-# quando é ele quem fala
+# mas sem perder a marra — dispara quando ele fala, no máximo 1x a
+# cada 30 minutos
 
 _INTERACOES_FELIPE = [
     "opa, o Felipe apareceu!! *se ajeita, afinal é mod* 🦇🖤",
@@ -1142,88 +1162,16 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             await message.reply(random.choice(_INTERACOES_XISPA_CHUTE), mention_author=False)
             return
 
-        # ── Elogio automático sempre que o Draw for citado ──────────
-        # CORREÇÃO: antes contava tanto @menção digitada quanto só o
-        # nome/apelido dele solto em texto puro (via _mensagem_cita_pessoa),
-        # o que disparava a reação até em frases que só comentavam sobre
-        # ele sem chamar/marcar ninguém (ex: "acho que o draw é gente boa"
-        # dito sem @). Agora só conta @menção DIGITADA de verdade — o
-        # nome sozinho na frase não é mais suficiente. Só não dispara
-        # quando é o próprio Draw falando, porque aí quem cuida disso é
-        # o bloco de interação dele logo abaixo (com o cooldown de 30 min)
-        if message.author.id != DRAW_USER_ID and DRAW_USER_ID in ids_mencionados:
-            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
-            async with message.channel.typing():
-                await asyncio.sleep(random.uniform(0.4, 1.0))
-            await message.reply(random.choice(_INTERACOES_DRAW), mention_author=False)
-            return
-
-        # ── Reação automática sempre que o Ghost for citado ─────────
-        # CORREÇÃO: mesma lógica do Draw — agora só reage a @menção
-        # DIGITADA de verdade, não a citação por nome solto no texto.
-        # Exceto quando é o próprio Ghost falando, que cai no bloco
-        # dele mais abaixo
-        if message.author.id != GHOST_USER_ID and GHOST_USER_ID in ids_mencionados:
-            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
-            async with message.channel.typing():
-                await asyncio.sleep(random.uniform(0.4, 1.0))
-            await message.reply(random.choice(_INTERACOES_GHOST), mention_author=False)
-            return
-
-        # ── Reação automática sempre que a namorada do Ghost for citada ──
-        # CORREÇÃO: mesma lógica do Draw e do Ghost — agora só reage a
-        # @menção DIGITADA de verdade. Exceto quando é ela mesma
-        # falando, que cai no bloco dela mais abaixo
-        if message.author.id != GHOST_NAMORADA_USER_ID and GHOST_NAMORADA_USER_ID in ids_mencionados:
-            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
-            async with message.channel.typing():
-                await asyncio.sleep(random.uniform(0.4, 1.0))
-            await message.reply(random.choice(_INTERACOES_GHOST_NAMORADA), mention_author=False)
-            return
-
-        # ── Reação automática sempre que a Dalia for citada ─────────
-        # CORREÇÃO: mesma lógica do Draw, Ghost e namorada do Ghost —
-        # agora só reage a @menção DIGITADA de verdade. Exceto quando
-        # é ela mesma falando, que cai no bloco dela mais abaixo
-        if message.author.id != DALIA_USER_ID and DALIA_USER_ID in ids_mencionados:
-            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
-            async with message.channel.typing():
-                await asyncio.sleep(random.uniform(0.4, 1.0))
-            await message.reply(random.choice(_INTERACOES_DALIA), mention_author=False)
-            return
-
-        # ── Reação automática sempre que a Orochi for citada ────────
-        # CORREÇÃO: mesma lógica do Draw, Ghost e Dalia — agora só
-        # reage a @menção DIGITADA de verdade. Antes, uma mensagem
-        # como "É q a orochi é muito ativa" (só comentando sobre ela,
-        # sem marcar ninguém) disparava essa reação por engano, como
-        # se a Vampy estivesse cumprimentando a Orochi direto. Exceto
-        # quando é ela mesma falando, que cai no bloco dela mais abaixo
-        if message.author.id != OROCHI_USER_ID and OROCHI_USER_ID in ids_mencionados:
-            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
-            async with message.channel.typing():
-                await asyncio.sleep(random.uniform(0.4, 1.0))
-            await message.reply(random.choice(_INTERACOES_OROCHI), mention_author=False)
-            return
-
-        # ── Reação automática sempre que o Felipe for citado ────────
-        # mesma lógica do Draw, Ghost, Dalia e Orochi — só reage a
-        # @menção DIGITADA de verdade (marcar o nome dele de propósito
-        # no Discord), nunca só por citar "felipe" solto numa frase.
-        # Exceto quando é ele mesmo falando, que cai no bloco dele
-        # mais abaixo
-        if message.author.id != FELIPE_USER_ID and FELIPE_USER_ID in ids_mencionados:
-            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
-            async with message.channel.typing():
-                await asyncio.sleep(random.uniform(0.4, 1.0))
-            await message.reply(random.choice(_INTERACOES_FELIPE), mention_author=False)
-            return
-
         # ── Interação especial e personalizada com o Draw ───────────
-        # dispara quando ele fala (ou cita a Vampy), no máximo 1x a
-        # cada 30 minutos — não depende do cooldown normal do canal.
-        # depois que o cooldown libera, ainda tem uma chance aleatória
-        # de disparar (não é automático/garantido na primeira mensagem)
+        # CORREÇÃO (v1.3): antes essa reação também disparava quando o
+        # Draw era apenas @mencionado por OUTRA pessoa (ex: "Vampy joga
+        # uma bomba atômica no @Draw"), fazendo a Vampy dizer "olha só
+        # quem chegou, o Draw!!" como se ele tivesse aparecido/falado —
+        # mesmo sendo apenas o ALVO da mensagem de outra pessoa. Agora
+        # só dispara quando é o PRÓPRIO Draw quem manda a mensagem, no
+        # máximo 1x a cada 30 minutos — depois que o cooldown libera,
+        # ainda tem uma chance aleatória de disparar (não é automático
+        # na primeira mensagem)
         if message.author.id == DRAW_USER_ID:
             agora_draw = datetime.now(timezone.utc)
             cooldown_passou = (agora_draw - self._ultimo_draw).total_seconds() >= DRAW_COOLDOWN_SEGUNDOS
@@ -1236,8 +1184,11 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 return
 
         # ── Interação especial com o Ghost ──────────────────────────
-        # mesma lógica do Draw: dispara quando ele fala, no máximo 1x a
-        # cada 30 minutos, com uma chance aleatória depois que libera
+        # CORREÇÃO (v1.3): mesma correção do Draw — a reação de "chegou
+        # o Ghost" agora só dispara quando é o PRÓPRIO Ghost quem fala,
+        # não mais só por ser @mencionado por outra pessoa. A piada do
+        # "tiro" continua reagindo na hora, sem cooldown, mas também só
+        # quando é o Ghost quem manda a mensagem
         if message.author.id == GHOST_USER_ID:
             # a brincadeira do "tiro" tem prioridade e reage na hora,
             # sem cooldown — é a piada clássica dele
@@ -1259,9 +1210,9 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 return
 
         # ── Interação especial com a namorada do Ghost ──────────────
-        # mesma lógica do Draw e do Ghost: dispara quando ela fala, no
-        # máximo 1x a cada 30 minutos, com uma chance aleatória depois
-        # que o cooldown libera
+        # CORREÇÃO (v1.3): mesma correção do Draw e do Ghost — só
+        # dispara quando é ela mesma quem fala, no máximo 1x a cada 30
+        # minutos, com uma chance aleatória depois que o cooldown libera
         if message.author.id == GHOST_NAMORADA_USER_ID:
             agora_ghost_namorada = datetime.now(timezone.utc)
             cooldown_passou = (agora_ghost_namorada - self._ultimo_ghost_namorada).total_seconds() >= GHOST_NAMORADA_COOLDOWN_SEGUNDOS
@@ -1274,9 +1225,10 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 return
 
         # ── Interação especial com a Dalia ───────────────────────────
-        # mesma lógica do Draw, Ghost e namorada do Ghost: dispara
-        # quando ela fala, no máximo 1x a cada 30 minutos, com uma
-        # chance aleatória depois que o cooldown libera
+        # CORREÇÃO (v1.3): mesma correção do Draw, Ghost e namorada do
+        # Ghost — só dispara quando é ela mesma quem fala, no máximo 1x
+        # a cada 30 minutos, com uma chance aleatória depois que o
+        # cooldown libera
         if message.author.id == DALIA_USER_ID:
             agora_dalia = datetime.now(timezone.utc)
             cooldown_passou = (agora_dalia - self._ultimo_dalia).total_seconds() >= DALIA_COOLDOWN_SEGUNDOS
@@ -1289,9 +1241,9 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 return
 
         # ── Interação especial com a Orochi ─────────────────────────
-        # mesma lógica do Draw, Ghost e Dalia: dispara quando ela
-        # fala, no máximo 1x a cada 30 minutos, com uma chance
-        # aleatória depois que o cooldown libera
+        # CORREÇÃO (v1.3): mesma correção do Draw, Ghost e Dalia — só
+        # dispara quando é ela mesma quem fala, no máximo 1x a cada 30
+        # minutos, com uma chance aleatória depois que o cooldown libera
         if message.author.id == OROCHI_USER_ID:
             agora_orochi = datetime.now(timezone.utc)
             cooldown_passou = (agora_orochi - self._ultimo_orochi).total_seconds() >= OROCHI_COOLDOWN_SEGUNDOS
@@ -1304,9 +1256,10 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 return
 
         # ── Interação especial com o Felipe ─────────────────────────
-        # mesma lógica do Draw, Ghost, Dalia e Orochi: dispara quando
-        # ele fala, no máximo 1x a cada 30 minutos, com uma chance
-        # aleatória depois que o cooldown libera
+        # CORREÇÃO (v1.3): mesma correção do Draw, Ghost, Dalia e
+        # Orochi — só dispara quando é ele mesmo quem fala, no máximo
+        # 1x a cada 30 minutos, com uma chance aleatória depois que o
+        # cooldown libera
         if message.author.id == FELIPE_USER_ID:
             agora_felipe = datetime.now(timezone.utc)
             cooldown_passou = (agora_felipe - self._ultimo_felipe).total_seconds() >= FELIPE_COOLDOWN_SEGUNDOS
