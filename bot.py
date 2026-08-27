@@ -148,6 +148,39 @@ _RESP_GOSTA_BRINCAR = [
     "*bate as asinhas animada* SIM!! vamos, vamos!! 🦇✨",
 ]
 
+# respostas pra "pousa no meu ombro" / "senta no ombro" etc.
+_RESP_POUSA_OMBRO = [
+    "*voa e pousa levinha no seu ombro* consegui!! sou leve que nem uma pluma 🦇🖤",
+    "*desce voando e se agarra no seu ombro* aqui tô eu, bem confortável!! 🦇✨",
+    "owwn, claro que pouso!! *se ajeita toda satisfeita* 🦇💜",
+    "*aterrissa igual profissional* e aí, gostou da companhia?? 😈🦇",
+    "*pousa e enrola a asinha no seu pescoço* agora sou sua sombra oficial 🦇🖤",
+    "*pousa suavinha* prontinho!! posso ficar aqui a noite toda 🦇🌙",
+    "*chega voando e se pendura no seu ombro de cabeça pra baixo* melhor vista da minha vida 😈🦇",
+]
+
+# respostas pra "vem cá" / "vem aqui" / "chega aqui"
+_RESP_VEM_CA = [
+    "*voa correndo* já cheguei!! 🦇💨",
+    "*aparece do nada bem do seu lado* pronto, vim!! 🦇✨",
+    "owwn, chamou?? *pousa animada* 🦇🖤",
+    "*bate as asinhas rapidinho e chega* tô aqui!! o que foi?? 🦇💜",
+    "*voa em disparada* opa, presente!! 😈🦇",
+    "*desce zunindo* cheguei antes até de você terminar de chamar 🦇✨",
+]
+
+# respostas pra "para de ficar pulando/voando atrás de mim" — ela nunca
+# para de verdade, só faz graça e continua do jeitinho dela
+_RESP_PARA_DE_SEGUIR = [
+    "nunca!! sua sombra bagunçada agora sou eu 😈🦇",
+    "*continua pulando atrás, só que rindo* nunca vou parar kkkk 🦇✨",
+    "impossível, isso é contrato de morceguinha vitalício 😈🦇🖤",
+    "*para bem na sua frente ao invés de atrás* satisfeito?? 😹🦇",
+    "*ri e continua* eu vim de brinde, não tem devolução 🦇💜",
+    "*se pendura na sua cabeça em vez das costas* melhorou?? 😈🦇",
+    "hmm... não 😹🦇 *continua voando atrás*",
+]
+
 _RESPOSTAS_SEED = {
 
     # ── Bom dia ──────────────────────────────────────────────────
@@ -336,6 +369,49 @@ _RESPOSTAS_SEED = {
     "bora brincar": _RESP_GOSTA_BRINCAR,
     "topa brincar": _RESP_GOSTA_BRINCAR,
 
+    # ── Pousa no meu ombro / senta no ombro ──────────────────────
+    "pousa no meu ombro": _RESP_POUSA_OMBRO,
+    "pouse no meu ombro": _RESP_POUSA_OMBRO,
+    "pousa no ombro": _RESP_POUSA_OMBRO,
+    "pouse no ombro": _RESP_POUSA_OMBRO,
+    "senta no ombro": _RESP_POUSA_OMBRO,
+    "senta no meu ombro": _RESP_POUSA_OMBRO,
+    "vem pro ombro": _RESP_POUSA_OMBRO,
+    "vem para o ombro": _RESP_POUSA_OMBRO,
+
+    # ── Vem cá / vem aqui / chega aqui ───────────────────────────
+    "vem ca": _RESP_VEM_CA,
+    "vem cá": _RESP_VEM_CA,
+    "vem aqui": _RESP_VEM_CA,
+    "vem pra ca": _RESP_VEM_CA,
+    "vem pra cá": _RESP_VEM_CA,
+    "vem para ca": _RESP_VEM_CA,
+    "vem para cá": _RESP_VEM_CA,
+    "venha aqui": _RESP_VEM_CA,
+    "venha ca": _RESP_VEM_CA,
+    "venha cá": _RESP_VEM_CA,
+    "chega aqui": _RESP_VEM_CA,
+
+    # ── Para de pular/voar atrás de mim / para de me seguir ──────
+    "para de pular atras de mim": _RESP_PARA_DE_SEGUIR,
+    "para de pular atrás de mim": _RESP_PARA_DE_SEGUIR,
+    "pare de pular atras de mim": _RESP_PARA_DE_SEGUIR,
+    "pare de pular atrás de mim": _RESP_PARA_DE_SEGUIR,
+    "para de ficar pulando atras de mim": _RESP_PARA_DE_SEGUIR,
+    "para de ficar pulando atrás de mim": _RESP_PARA_DE_SEGUIR,
+    "pare de ficar pulando atras de mim": _RESP_PARA_DE_SEGUIR,
+    "pare de ficar pulando atrás de mim": _RESP_PARA_DE_SEGUIR,
+    "para de voar atras de mim": _RESP_PARA_DE_SEGUIR,
+    "para de voar atrás de mim": _RESP_PARA_DE_SEGUIR,
+    "pare de voar atras de mim": _RESP_PARA_DE_SEGUIR,
+    "pare de voar atrás de mim": _RESP_PARA_DE_SEGUIR,
+    "para de ficar atras de mim": _RESP_PARA_DE_SEGUIR,
+    "para de ficar atrás de mim": _RESP_PARA_DE_SEGUIR,
+    "pare de ficar atras de mim": _RESP_PARA_DE_SEGUIR,
+    "pare de ficar atrás de mim": _RESP_PARA_DE_SEGUIR,
+    "para de me seguir": _RESP_PARA_DE_SEGUIR,
+    "pare de me seguir": _RESP_PARA_DE_SEGUIR,
+
     # ── Obrigado(a) ──────────────────────────────────────────────
     "obrigad": [
         "de nadaaa!! *faz uma reverência voando* 🦇💜",
@@ -375,11 +451,19 @@ def _checar_gatilho_generico(texto: str, db: dict) -> str | None:
         return texto_lower
     # usa \b (fronteira de palavra) pra evitar que gatilhos curtos como
     # "oi" ou "hey" disparem dentro de palavras aleatórias (ex: "dois", "coisa")
+    #
+    # quando mais de uma chave bate na mesma mensagem (ex: "pousa no meu
+    # ombro vampy" contém tanto "vampy" quanto "pousa no meu ombro"),
+    # damos preferência pro gatilho mais específico (o mais longo), pra
+    # frases inteiras não serem atropeladas por um gatilho curto e genérico
+    encontrados = []
     for chave in db["respostas"]:
         padrao = r"\b" + re.escape(chave) + r"\b"
         if re.search(padrao, texto_lower):
-            return chave
-    return None
+            encontrados.append(chave)
+    if not encontrados:
+        return None
+    return max(encontrados, key=len)
 
 
 # ══════════════════════════════════════════════════════════════════
