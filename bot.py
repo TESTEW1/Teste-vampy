@@ -41,6 +41,15 @@ DIALOGO_FILE = "vampy_dialogo.json"
 DRAW_USER_ID = 763467697069359143
 DRAW_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
 
+# ID de alguém que a Vampy sempre zoa quando ele fala — reação na hora,
+# sem cooldown, do jeitinho encrenqueira dela ("xispa daqui" etc.)
+XISPA_USER_ID = 1374346793957064735
+
+# ID do Ghost — assim como o Draw, recebe interações especiais e
+# personalizadas (limitadas a 1 a cada 30 minutos, pra não repetir)
+GHOST_USER_ID = 1077952035099512923
+GHOST_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
+
 # aparições espontâneas ("do nada", sem ninguém chamar) — raras de
 # propósito, no máximo 1 a cada ~13 horas, com ou sem citar alguém
 APARICAO_ESPONTANEA_COOLDOWN_SEGUNDOS = 13 * 60 * 60  # 13 horas
@@ -451,6 +460,45 @@ _INTERACOES_DRAW = [
 
 
 # ══════════════════════════════════════════════════════════════════
+#  🦇  ZOEIRA COM O ALVO (XISPA_USER_ID) — sempre que ele fala
+# ══════════════════════════════════════════════════════════════════
+# esse aqui é o "saco de pancada" oficial da Vampy: toda vez que ele
+# manda mensagem, ela dispara uma zoeira diferente, sem cooldown —
+# fofa e engraçada do jeitinho atentado dela
+
+_INTERACOES_XISPA = [
+    "XISPAAAAAAA, ninguém te chamou aqui 😹🦇",
+    "*aparece só pra zoar* xispa daqui, moço, ninguém te chamou não 😈🦇",
+    "eita, apareceu de novo... xispa, xispa!! 🦇💨",
+    "*bate as asinhas rindo* vai xispando, ninguém pediu pra você falar 😹🖤",
+    "pssiu, some!! aqui ninguém te chamou, viu?? 😈🦇",
+    "*rindo escondida atrás da asa* vai tomar um tiro do Ghost 😈🔫🦇",
+    "*voa de cabeça pra baixo rindo* xispaaaa daqui, sumido!! 🦇✨",
+    "hmpf, olha quem apareceu sem ninguém chamar... xispa!! 😹🦇",
+    "*espia de longe e já sai rindo* xispa logo, presente de grego 🦇💜",
+    "*aponta de longe* esse aí não foi chamado não, gente... xispa!! 😈🦇",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
+#  🦇  INTERAÇÕES ESPECIAIS COM O GHOST (a cada 30 minutos)
+# ══════════════════════════════════════════════════════════════════
+# mesma lógica do Draw: sempre que o Ghost (GHOST_USER_ID) fala, a
+# Vampy manda uma mensagem personalizada pra ele — no máximo 1x a
+# cada 30 minutos, pra não ficar repetindo em toda mensagem dele
+
+_INTERACOES_GHOST = [
+    "opa, chegou o Ghost!! 🦇🖤",
+    "*pousa do lado do Ghost* e aí, Ghost, tudo certo?? 🦇✨",
+    "hmm, o Ghost apareceu... alguém segura minhas asinhas 😈🦇",
+    "Ghost!! tava pensando em você inclusive, que sincronia 🦇💜",
+    "*acena animada* olha só quem chegou, o Ghost!! 😈🦇🖤",
+    "*voa em círculos* Ghost na área, cuidado gente!! 🦇✨",
+    "eu escuto esse nome e já sei, só pode ser o Ghost chegando 🦇🌙",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
 #  🦇  APARIÇÕES ESPONTÂNEAS ("do nada") — raras de propósito
 # ══════════════════════════════════════════════════════════════════
 # sem ninguém chamar, sem gatilho batendo — a Vampy só aparece do
@@ -512,6 +560,10 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # contando a partir de quando o bot liga, então ela não manda
         # nada especial pra ele automaticamente assim que o bot inicia
         self._ultimo_draw: datetime = datetime.now(timezone.utc)
+
+        # Cooldown separado só pra interação especial com o Ghost — mesma
+        # lógica do Draw, também começa a contar a partir do boot do bot
+        self._ultimo_ghost: datetime = datetime.now(timezone.utc)
 
         # Cooldown separado pras aparições espontâneas ("do nada")
         self._ultimo_espontaneo: datetime | None = None
@@ -592,6 +644,30 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                     await asyncio.sleep(random.uniform(0.6, 1.4))
                 await message.reply(random.choice(_INTERACOES_DRAW), mention_author=False)
                 return
+
+        # ── Interação especial com o Ghost ──────────────────────────
+        # mesma lógica do Draw: dispara quando ele fala, no máximo 1x a
+        # cada 30 minutos, com uma chance aleatória depois que libera
+        if message.author.id == GHOST_USER_ID:
+            agora_ghost = datetime.now(timezone.utc)
+            cooldown_passou = (agora_ghost - self._ultimo_ghost).total_seconds() >= GHOST_COOLDOWN_SEGUNDOS
+            if cooldown_passou and random.random() < 0.4:
+                self._ultimo_ghost = agora_ghost
+                self._ultimo_resp[message.channel.id] = agora_ghost
+                async with message.channel.typing():
+                    await asyncio.sleep(random.uniform(0.6, 1.4))
+                await message.reply(random.choice(_INTERACOES_GHOST), mention_author=False)
+                return
+
+        # ── Zoeira automática com o alvo de sempre ──────────────────
+        # sempre que XISPA_USER_ID manda mensagem, a Vampy zoa na hora,
+        # sem cooldown e sem depender de gatilho — é a graça dele com ela
+        if message.author.id == XISPA_USER_ID:
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.4, 1.0))
+            await message.reply(random.choice(_INTERACOES_XISPA), mention_author=False)
+            return
 
         now = datetime.now(timezone.utc)
         ultimo = self._ultimo_resp.get(message.channel.id)
