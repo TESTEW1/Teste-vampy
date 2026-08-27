@@ -809,7 +809,11 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author.bot or not message.guild:
+        # ignora mensagens de outros bots — EXCETO a do XISPA_USER_ID,
+        # que na verdade é o bot "Golden Fenix" (não uma pessoa). Sem
+        # essa exceção, a zoeira automática com ele nunca dispararia,
+        # porque a função já dava return antes de chegar lá
+        if (message.author.bot and message.author.id != XISPA_USER_ID) or not message.guild:
             return
 
         ctx = await self.bot.get_context(message)
