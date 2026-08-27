@@ -109,6 +109,16 @@ _RESP_GOSTA_MORCEGO_VAMPIRO = [
     "gosto muitíssimo!! é praticamente minha família, sabe?? 🦇💜",
 ]
 
+# respostas pra "vai aprontar o quê?" (reaproveitadas em várias grafias)
+_RESP_VAI_APRONTAR = [
+    "hmm... ainda é segredo!! mas vai ser bom 😈🦇",
+    "ain, se eu contar deixa de ser surpresa!! 😈🦇✨",
+    "só uma coisinha básica: aparecer quando ninguém espera e sumir na hora certa 😈🦇🖤",
+    "tô pensando... talvez trocar as horas do relógio de alguém, ou só te dar um susto mesmo 😈🦇",
+    "shhh, segredo de morceguinha!! você vai descobrir quando acontecer 🦇🖤😈",
+    "*sorri misteriosa* isso é surpresa!! fica de olho 👀🦇",
+]
+
 _RESPOSTAS_SEED = {
 
     # ── Bom dia ──────────────────────────────────────────────────
@@ -261,6 +271,15 @@ _RESPOSTAS_SEED = {
     "curte vampiro": _RESP_GOSTA_MORCEGO_VAMPIRO,
     "ama morcego": _RESP_GOSTA_MORCEGO_VAMPIRO,
     "ama vampiro": _RESP_GOSTA_MORCEGO_VAMPIRO,
+
+    # ── Vai aprontar o quê? ──────────────────────────────────────
+    "vai aprontar o que": _RESP_VAI_APRONTAR,
+    "vai aprontar o quê": _RESP_VAI_APRONTAR,
+    "vai aprontar": _RESP_VAI_APRONTAR,
+    "o que vc vai aprontar": _RESP_VAI_APRONTAR,
+    "o que você vai aprontar": _RESP_VAI_APRONTAR,
+    "que arte vc vai fazer": _RESP_VAI_APRONTAR,
+    "que arte você vai fazer": _RESP_VAI_APRONTAR,
 
     # ── Obrigado(a) ──────────────────────────────────────────────
     "obrigad": [
@@ -443,8 +462,10 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         self._ultimo_resp: dict[int, datetime] = {}
         self._cooldown_resp = 3   # segundos
 
-        # Cooldown separado só pra interação especial com o Draw
-        self._ultimo_draw: datetime | None = None
+        # Cooldown separado só pra interação especial com o Draw — começa
+        # contando a partir de quando o bot liga, então ela não manda
+        # nada especial pra ele automaticamente assim que o bot inicia
+        self._ultimo_draw: datetime = datetime.now(timezone.utc)
 
         # Cooldown separado pras aparições espontâneas ("do nada")
         self._ultimo_espontaneo: datetime | None = None
@@ -512,14 +533,13 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
 
         # ── Interação especial e personalizada com o Draw ───────────
         # dispara quando ele fala (ou cita a Vampy), no máximo 1x a
-        # cada 30 minutos — não depende do cooldown normal do canal
+        # cada 30 minutos — não depende do cooldown normal do canal.
+        # depois que o cooldown libera, ainda tem uma chance aleatória
+        # de disparar (não é automático/garantido na primeira mensagem)
         if message.author.id == DRAW_USER_ID:
             agora_draw = datetime.now(timezone.utc)
-            cooldown_passou = (
-                self._ultimo_draw is None
-                or (agora_draw - self._ultimo_draw).total_seconds() >= DRAW_COOLDOWN_SEGUNDOS
-            )
-            if cooldown_passou:
+            cooldown_passou = (agora_draw - self._ultimo_draw).total_seconds() >= DRAW_COOLDOWN_SEGUNDOS
+            if cooldown_passou and random.random() < 0.4:
                 self._ultimo_draw = agora_draw
                 self._ultimo_resp[message.channel.id] = agora_draw
                 async with message.channel.typing():
