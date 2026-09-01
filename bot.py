@@ -126,6 +126,36 @@ FELIPE_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
 # apelido usado só como referência/utilitário
 FELIPE_APELIDOS = ["felipe"]
 
+# ID do Guezera — recebe interações ÉPICAS e personalizadas (limitadas
+# a 1 a cada 30 minutos, pra não ficar repetitivo). Só dispara quando
+# é o PRÓPRIO Guezera quem manda a mensagem (mesma lógica das outras
+# interações especiais, ver changelog v1.3)
+GUEZERA_USER_ID = 1519575817859104809
+GUEZERA_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
+# apelidos usados só como referência/utilitário
+GUEZERA_APELIDOS = ["guezera", "1guezera"]
+
+# ID do Moonzin — recebe interações ÉPICAS e personalizadas (limitadas
+# a 1 a cada 30 minutos). Só dispara quando é o PRÓPRIO Moonzin quem
+# manda a mensagem
+MOONZIN_USER_ID = 1241868067202666587
+MOONZIN_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
+MOONZIN_APELIDOS = ["moonzin", "moon"]
+
+# ID da Yue — recebe interações ÉPICAS e personalizadas (limitadas a
+# 1 a cada 30 minutos). Só dispara quando é a PRÓPRIA Yue quem manda
+# a mensagem
+YUE_USER_ID = 1476749688324624456
+YUE_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
+YUE_APELIDOS = ["yue"]
+
+# ID do Lai — recebe interações ÉPICAS e personalizadas (limitadas a
+# 1 a cada 30 minutos). Só dispara quando é o PRÓPRIO Lai quem manda
+# a mensagem
+LAI_USER_ID = 756128738810396693
+LAI_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
+LAI_APELIDOS = ["lai"]
+
 # aparições espontâneas ("do nada", sem ninguém chamar) — raras de
 # propósito, no máximo 1 a cada ~13 horas, com ou sem citar alguém
 APARICAO_ESPONTANEA_COOLDOWN_SEGUNDOS = 13 * 60 * 60  # 13 horas
@@ -857,6 +887,69 @@ _INTERACOES_FELIPE = [
 
 
 # ══════════════════════════════════════════════════════════════════
+#  🦇⚡ INTERAÇÕES ÉPICAS COM O GUEZERA (a cada 30 minutos)
+# ══════════════════════════════════════════════════════════════════
+# mesma lógica das outras interações especiais, só que com um tom bem
+# mais grandioso — dispara quando ele fala, no máximo 1x a cada 30 min
+
+_INTERACOES_GUEZERA = [
+    "⚡ AS LENDAS FALAM A VERDADE... GUEZERA CHEGOU!! 🦇🔥",
+    "*os ventos mudam de direção* preparem o campo de batalha, o Guezera tá on 😈🦇⚡",
+    "*se ajoelha em reverência* finalmente, a lenda em pessoa!! Guezera!! 🦇👑",
+    "SOA O ALARME!! Guezera apareceu e o servidor nunca mais será o mesmo 🔥🦇⚡",
+    "*bate as asinhas com força, empolgada* GUEZERAAAA!! bora fazer história hoje!! 😈🦇",
+    "sinto um poder diferente no ar... só pode ser o Guezera chegando 🦇⚡🖤",
+    "*puxa uma trilha sonora épica do nada* e eis que surge... GUEZERA!! 🎶🦇🔥",
+    "todo mundo se ajeita quando essa lenda aparece... Guezera na área!! 😈🦇⚡",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
+#  🦇🌕 INTERAÇÕES ÉPICAS COM O MOONZIN (a cada 30 minutos)
+# ══════════════════════════════════════════════════════════════════
+_INTERACOES_MOONZIN = [
+    "🌕 A LUA CHEIA SE ERGUE NO CÉU... MOONZIN CHEGOU!! 🦇🌙",
+    "*uiva pro céu igual lobisomem* MOONZIIIIN!! a noite agora é sua!! 😈🦇🌕",
+    "*voa em direção à lua* sinto a energia lunar aumentando... é o Moonzin!! 🦇✨",
+    "prepara o eclipse, gente, o Moonzin apareceu!! 🌑🦇⚡",
+    "*se pendura de cabeça pra baixo admirando* aí está ele, o lendário Moonzin 🦇🌙🖤",
+    "quando o Moonzin chega até a lua fica mais brilhante, juro 🌕🦇✨",
+    "ALERTA DE LUA CHEIA!! Moonzin tá on!! 😈🦇🌕",
+    "*reverência sob o luar* Moonzin, sua majestade da noite 🦇🌙👑",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
+#  🦇✨ INTERAÇÕES ÉPICAS COM A YUE (a cada 30 minutos)
+# ══════════════════════════════════════════════════════════════════
+_INTERACOES_YUE = [
+    "✨ um brilho diferente cruzou o céu... É A YUE CHEGANDO!! 🦇🌟",
+    "*se curva com respeito* a lenda em pessoa, Yue!! 🦇👑",
+    "sinto uma energia especial no ar... só pode ser a Yue 🦇✨🖤",
+    "PREPAREM AS ASAS, a Yue chegou e o clima já mudou!! 😈🦇⚡",
+    "*rodopia empolgada* YUEEEE!! finalmente, minha lenda favorita!! 🦇✨",
+    "as estrelas se alinharam bonito hoje... a Yue apareceu 🌟🦇🖤",
+    "*bate continência com a asinha* Yue, sempre um evento quando você chega 🦇✨👑",
+    "ninguém avisou que hoje ia ter lenda no servidor, mas a Yue chegou mesmo assim 😈🦇✨",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
+#  🦇⚡ INTERAÇÕES ÉPICAS COM O LAI (a cada 30 minutos)
+# ══════════════════════════════════════════════════════════════════
+_INTERACOES_LAI = [
+    "⚡ RAIO CAIU E NÃO FOI TEMPESTADE... FOI O LAI CHEGANDO!! 🦇🔥",
+    "*os alto-falantes ligam sozinhos tocando uma trilha épica* Lai na área!! 🎶🦇⚡",
+    "*se ajoelha* a lenda finalmente chegou, todos saúdem o Lai!! 🦇👑",
+    "SOA A SIRENE!! Lai apareceu e o servidor tá em festa 🔥🦇⚡",
+    "*voa em círculos triunfante* LAAAAI!! bora fazer história 😈🦇✨",
+    "sinto o chão tremer... só pode ser o Lai chegando 🦇⚡🖤",
+    "*puxa fogos de artifício do nada* alguém avisa que o Lai tá on!! 🎆🦇⚡",
+    "essa lenda aí sempre traz um clima diferente, olha só, o Lai!! 😈🦇🔥",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
 #  🦇  RESPOSTAS PRA ATAQUES EM GERAL (fogo, facada, tiro)
 # ══════════════════════════════════════════════════════════════════
 # diferente da piada específica do Rz lá em cima, isso aqui vale
@@ -1059,6 +1152,18 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # Cooldown separado só pra interação especial com o Felipe —
         # mesma lógica do Draw, Rz, Dalia e Orochi
         self._ultimo_felipe: datetime = datetime.now(timezone.utc)
+
+        # Cooldown separado só pra interação épica com o Guezera
+        self._ultimo_guezera: datetime = datetime.now(timezone.utc)
+
+        # Cooldown separado só pra interação épica com o Moonzin
+        self._ultimo_moonzin: datetime = datetime.now(timezone.utc)
+
+        # Cooldown separado só pra interação épica com a Yue
+        self._ultimo_yue: datetime = datetime.now(timezone.utc)
+
+        # Cooldown separado só pra interação épica com o Lai
+        self._ultimo_lai: datetime = datetime.now(timezone.utc)
 
         # Cooldown separado pras aparições espontâneas ("do nada")
         self._ultimo_espontaneo: datetime | None = None
@@ -1269,6 +1374,57 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 async with message.channel.typing():
                     await asyncio.sleep(random.uniform(0.6, 1.4))
                 await message.reply(random.choice(_INTERACOES_FELIPE), mention_author=False)
+                return
+
+        # ── Interação épica com o Guezera ────────────────────────────
+        # mesma lógica das outras: só dispara quando é o PRÓPRIO
+        # Guezera quem fala, no máximo 1x a cada 30 minutos, com uma
+        # chance aleatória depois que o cooldown libera
+        if message.author.id == GUEZERA_USER_ID:
+            agora_guezera = datetime.now(timezone.utc)
+            cooldown_passou = (agora_guezera - self._ultimo_guezera).total_seconds() >= GUEZERA_COOLDOWN_SEGUNDOS
+            if cooldown_passou and random.random() < 0.4:
+                self._ultimo_guezera = agora_guezera
+                self._ultimo_resp[message.channel.id] = agora_guezera
+                async with message.channel.typing():
+                    await asyncio.sleep(random.uniform(0.6, 1.4))
+                await message.reply(random.choice(_INTERACOES_GUEZERA), mention_author=False)
+                return
+
+        # ── Interação épica com o Moonzin ────────────────────────────
+        if message.author.id == MOONZIN_USER_ID:
+            agora_moonzin = datetime.now(timezone.utc)
+            cooldown_passou = (agora_moonzin - self._ultimo_moonzin).total_seconds() >= MOONZIN_COOLDOWN_SEGUNDOS
+            if cooldown_passou and random.random() < 0.4:
+                self._ultimo_moonzin = agora_moonzin
+                self._ultimo_resp[message.channel.id] = agora_moonzin
+                async with message.channel.typing():
+                    await asyncio.sleep(random.uniform(0.6, 1.4))
+                await message.reply(random.choice(_INTERACOES_MOONZIN), mention_author=False)
+                return
+
+        # ── Interação épica com a Yue ────────────────────────────────
+        if message.author.id == YUE_USER_ID:
+            agora_yue = datetime.now(timezone.utc)
+            cooldown_passou = (agora_yue - self._ultimo_yue).total_seconds() >= YUE_COOLDOWN_SEGUNDOS
+            if cooldown_passou and random.random() < 0.4:
+                self._ultimo_yue = agora_yue
+                self._ultimo_resp[message.channel.id] = agora_yue
+                async with message.channel.typing():
+                    await asyncio.sleep(random.uniform(0.6, 1.4))
+                await message.reply(random.choice(_INTERACOES_YUE), mention_author=False)
+                return
+
+        # ── Interação épica com o Lai ─────────────────────────────────
+        if message.author.id == LAI_USER_ID:
+            agora_lai = datetime.now(timezone.utc)
+            cooldown_passou = (agora_lai - self._ultimo_lai).total_seconds() >= LAI_COOLDOWN_SEGUNDOS
+            if cooldown_passou and random.random() < 0.4:
+                self._ultimo_lai = agora_lai
+                self._ultimo_resp[message.channel.id] = agora_lai
+                async with message.channel.typing():
+                    await asyncio.sleep(random.uniform(0.6, 1.4))
+                await message.reply(random.choice(_INTERACOES_LAI), mention_author=False)
                 return
 
         # ── Respostas pra ataques em geral (fogo, facada, tiro) ─────
