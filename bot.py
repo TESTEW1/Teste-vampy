@@ -82,19 +82,19 @@ DRAW_APELIDOS = ["draw"]
 # sem cooldown, do jeitinho encrenqueira dela ("xispa daqui" etc.)
 XISPA_USER_ID = 1374346793957064735
 
-# ID do Ghost — assim como o Draw, recebe interações especiais e
+# ID do Rz — assim como o Draw, recebe interações especiais e
 # personalizadas (limitadas a 1 a cada 30 minutos, pra não repetir).
-# IMPORTANTE: só dispara quando é o PRÓPRIO Ghost quem manda a
+# IMPORTANTE: só dispara quando é o PRÓPRIO Rz quem manda a
 # mensagem — ser apenas citado/@marcado por outra pessoa não conta
 # mais (ver changelog v1.3)
 GHOST_USER_ID = 1077952035099512923
 GHOST_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
-# apelidos/nomes do Ghost — mantidos apenas como referência/utilitário,
+# apelidos/nomes do Rz — mantidos apenas como referência/utilitário,
 # não são mais usados pra disparar a reação de "chegou" por citação
-GHOST_APELIDOS = ["ghost"]
+GHOST_APELIDOS = ["rz"]
 
-# ID da namorada do Ghost — mesma lógica de interação especial que o
-# Draw e o Ghost têm (limitada a 1 a cada 30 minutos, pra não repetir).
+# ID da namorada do Rz — mesma lógica de interação especial que o
+# Draw e o Rz têm (limitada a 1 a cada 30 minutos, pra não repetir).
 # Só dispara quando é ela mesma quem fala (ver changelog v1.3)
 GHOST_NAMORADA_USER_ID = 757956601020940338
 GHOST_NAMORADA_COOLDOWN_SEGUNDOS = 30 * 60  # 30 minutos
@@ -715,7 +715,7 @@ _INTERACOES_XISPA = [
     "eita, apareceu de novo... xispa, xispa!! 🦇💨",
     "*bate as asinhas rindo* vai xispando, ninguém pediu pra você falar 😹🖤",
     "pssiu, some!! aqui ninguém te chamou, viu?? 😈🦇",
-    "*rindo escondida atrás da asa* vai tomar um tiro do Ghost 😈🔫🦇",
+    "*rindo escondida atrás da asa* vai tomar um tiro do Rz 😈🔫🦇",
     "*voa de cabeça pra baixo rindo* xispaaaa daqui, sumido!! 🦇✨",
     "hmpf, olha quem apareceu sem ninguém chamar... xispa!! 😹🦇",
     "*espia de longe e já sai rindo* xispa logo, presente de grego 🦇💜",
@@ -739,37 +739,37 @@ _INTERACOES_XISPA_CHUTE = [
 
 
 # ══════════════════════════════════════════════════════════════════
-#  🦇  INTERAÇÕES ESPECIAIS COM O GHOST (a cada 30 minutos)
+#  🦇  INTERAÇÕES ESPECIAIS COM O RZ (a cada 30 minutos)
 # ══════════════════════════════════════════════════════════════════
-# mesma lógica do Draw: sempre que o Ghost (GHOST_USER_ID) fala, a
+# mesma lógica do Draw: sempre que o Rz (GHOST_USER_ID) fala, a
 # Vampy manda uma mensagem personalizada pra ele — no máximo 1x a
 # cada 30 minutos, pra não ficar repetindo em toda mensagem dele
 
 _INTERACOES_GHOST = [
-    "opa, chegou o Ghost!! 🦇🖤",
-    "*pousa do lado do Ghost* e aí, Ghost, tudo certo?? 🦇✨",
-    "hmm, o Ghost apareceu... alguém segura minhas asinhas 😈🦇",
-    "Ghost!! tava pensando em você inclusive, que sincronia 🦇💜",
-    "*acena animada* olha só quem chegou, o Ghost!! 😈🦇🖤",
-    "*voa em círculos* Ghost na área, cuidado gente!! 🦇✨",
-    "eu escuto esse nome e já sei, só pode ser o Ghost chegando 🦇🌙",
-    "*se esconde atrás dele rindo* o Ghost é parceiro de arte oficial 😈🦇🖤",
-    "esse aí é gente boa, olha só, o Ghost!! 🦇✨",
+    "opa, chegou o Rz!! 🦇🖤",
+    "*pousa do lado do Rz* e aí, Rz, tudo certo?? 🦇✨",
+    "hmm, o Rz apareceu... alguém segura minhas asinhas 😈🦇",
+    "Rz!! tava pensando em você inclusive, que sincronia 🦇💜",
+    "*acena animada* olha só quem chegou, o Rz!! 😈🦇🖤",
+    "*voa em círculos* Rz na área, cuidado gente!! 🦇✨",
+    "eu escuto esse nome e já sei, só pode ser o Rz chegando 🦇🌙",
+    "*se esconde atrás dele rindo* o Rz é parceiro de arte oficial 😈🦇🖤",
+    "esse aí é gente boa, olha só, o Rz!! 🦇✨",
 ]
 
-# palavras-chave que disparam a reação especial quando o Ghost faz a
+# palavras-chave que disparam a reação especial quando o Rz faz a
 # brincadeira clássica dele de "dar um tiro" em alguém (ex: "de um tiro
 # no Draw") — reage na hora, sem cooldown, é a piada de sempre dele
 _GATILHOS_TIRO_GHOST = ["tiro", "tiros", "atira", "atirar", "atirou", "bala", "balaço"]
 
 _INTERACOES_GHOST_TIRO = [
-    "*se esconde atrás da asinha* Ghost, calma, larga essa arma imaginária 😹🦇",
-    "AAAAH lá vem o Ghost ameaçando todo mundo de novo kkkk 🔫🦇",
-    "*voa se escondendo atrás de alguém* ninguém tá seguro quando o Ghost aparece assim 😈🦇",
-    "*pisca pra vítima* boa sorte correndo do Ghost, viu 😹🦇",
-    "Ghost sendo Ghost de novo... 🔫😈🦇",
-    "*ri nervosa e se esconde* mais uma ameaça de brincadeira do Ghost 😹🦇",
-    "*bate as asinhas alarmada* CUIDADO, o Ghost tá de mira em alguém!! 😈🦇",
+    "*se esconde atrás da asinha* Rz, calma, larga essa arma imaginária 😹🦇",
+    "AAAAH lá vem o Rz ameaçando todo mundo de novo kkkk 🔫🦇",
+    "*voa se escondendo atrás de alguém* ninguém tá seguro quando o Rz aparece assim 😈🦇",
+    "*pisca pra vítima* boa sorte correndo do Rz, viu 😹🦇",
+    "Rz sendo Rz de novo... 🔫😈🦇",
+    "*ri nervosa e se esconde* mais uma ameaça de brincadeira do Rz 😹🦇",
+    "*bate as asinhas alarmada* CUIDADO, o Rz tá de mira em alguém!! 😈🦇",
 ]
 
 def _contem_gatilho_tiro(texto: str) -> bool:
@@ -781,26 +781,26 @@ def _contem_gatilho_tiro(texto: str) -> bool:
 
 
 # ══════════════════════════════════════════════════════════════════
-#  🦇  INTERAÇÕES ESPECIAIS COM A NAMORADA DO GHOST (a cada 30 min)
+#  🦇  INTERAÇÕES ESPECIAIS COM A NAMORADA DO RZ (a cada 30 min)
 # ══════════════════════════════════════════════════════════════════
-# mesma lógica do Draw e do Ghost: sempre que ela (GHOST_NAMORADA_USER_ID)
+# mesma lógica do Draw e do Rz: sempre que ela (GHOST_NAMORADA_USER_ID)
 # fala, a Vampy manda uma mensagem personalizada — com uma zoeirinha
-# extra por ela namorar o Ghost — no máximo 1x a cada 30 minutos
+# extra por ela namorar o Rz — no máximo 1x a cada 30 minutos
 
 _INTERACOES_GHOST_NAMORADA = [
-    "opa, chegou a namorada do Ghost!! 🦇💕",
-    "*sorri sapeca* eii, você é quem rouba a atenção do Ghost por aqui, né?? 😈🦇💜",
-    "*cochicha rindo* psiu, o Ghost fica todo bobo quando você aparece, sabia?? 🦇💕",
-    "*voa em círculos animada* olha só quem chegou, a namorada do Ghost!! 🦇✨",
+    "opa, chegou a namorada do Rz!! 🦇💕",
+    "*sorri sapeca* eii, você é quem rouba a atenção do Rz por aqui, né?? 😈🦇💜",
+    "*cochicha rindo* psiu, o Rz fica todo bobo quando você aparece, sabia?? 🦇💕",
+    "*voa em círculos animada* olha só quem chegou, a namorada do Rz!! 🦇✨",
     "casal favorito do servidor apareceu (bem, metade dele) 🦇💜",
-    "*pousa do seu lado* e aí, tudo certo?? o Ghost já sabe que você tá aqui?? 😈🦇",
-    "*acena toda animada* oi oi!! como é namorar o Ghost, me conta os podres 😹🦇",
+    "*pousa do seu lado* e aí, tudo certo?? o Rz já sabe que você tá aqui?? 😈🦇",
+    "*acena toda animada* oi oi!! como é namorar o Rz, me conta os podres 😹🦇",
 ]
 
 # ══════════════════════════════════════════════════════════════════
 #  🦇  INTERAÇÕES ESPECIAIS COM A DALIA (líder do clã, a cada 30 min)
 # ══════════════════════════════════════════════════════════════════
-# mesma lógica do Draw, Ghost e namorada do Ghost: sempre que a Dalia
+# mesma lógica do Draw, Rz e namorada do Rz: sempre que a Dalia
 # (DALIA_USER_ID) fala, a Vampy manda uma mensagem personalizada — um
 # pouco mais respeitosa, já que ela é a líder do clã — no máximo 1x a
 # cada 30 minutos
@@ -821,7 +821,7 @@ _INTERACOES_DALIA = [
 # ══════════════════════════════════════════════════════════════════
 #  🦇  INTERAÇÕES ESPECIAIS COM A OROCHI (a cada 30 minutos)
 # ══════════════════════════════════════════════════════════════════
-# mesma lógica do Draw, Ghost e Dalia: sempre que a Orochi
+# mesma lógica do Draw, Rz e Dalia: sempre que a Orochi
 # (OROCHI_USER_ID) fala, a Vampy manda uma mensagem personalizada —
 # no máximo 1x a cada 30 minutos
 
@@ -859,7 +859,7 @@ _INTERACOES_FELIPE = [
 # ══════════════════════════════════════════════════════════════════
 #  🦇  RESPOSTAS PRA ATAQUES EM GERAL (fogo, facada, tiro)
 # ══════════════════════════════════════════════════════════════════
-# diferente da piada específica do Ghost lá em cima, isso aqui vale
+# diferente da piada específica do Rz lá em cima, isso aqui vale
 # pra QUALQUER pessoa que mandar esse tipo de mensagem — ex: "Vampy
 # ateia fogo no Fulano", "dá uma facada nele", "manda bala no Fulano"
 # etc. Se a mensagem citar/marcar alguém (@menção), a Vampy usa o
@@ -1040,24 +1040,24 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # nada especial pra ele automaticamente assim que o bot inicia
         self._ultimo_draw: datetime = datetime.now(timezone.utc)
 
-        # Cooldown separado só pra interação especial com o Ghost — mesma
+        # Cooldown separado só pra interação especial com o Rz — mesma
         # lógica do Draw, também começa a contar a partir do boot do bot
         self._ultimo_ghost: datetime = datetime.now(timezone.utc)
 
         # Cooldown separado só pra interação especial com a namorada do
-        # Ghost — mesma lógica do Draw e do Ghost
+        # Rz — mesma lógica do Draw e do Rz
         self._ultimo_ghost_namorada: datetime = datetime.now(timezone.utc)
 
         # Cooldown separado só pra interação especial com a Dalia —
-        # mesma lógica do Draw, Ghost e namorada do Ghost
+        # mesma lógica do Draw, Rz e namorada do Rz
         self._ultimo_dalia: datetime = datetime.now(timezone.utc)
 
         # Cooldown separado só pra interação especial com a Orochi —
-        # mesma lógica do Draw, Ghost e Dalia
+        # mesma lógica do Draw, Rz e Dalia
         self._ultimo_orochi: datetime = datetime.now(timezone.utc)
 
         # Cooldown separado só pra interação especial com o Felipe —
-        # mesma lógica do Draw, Ghost, Dalia e Orochi
+        # mesma lógica do Draw, Rz, Dalia e Orochi
         self._ultimo_felipe: datetime = datetime.now(timezone.utc)
 
         # Cooldown separado pras aparições espontâneas ("do nada")
@@ -1183,12 +1183,12 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 await message.reply(random.choice(_INTERACOES_DRAW), mention_author=False)
                 return
 
-        # ── Interação especial com o Ghost ──────────────────────────
+        # ── Interação especial com o Rz ─────────────────────────────
         # CORREÇÃO (v1.3): mesma correção do Draw — a reação de "chegou
-        # o Ghost" agora só dispara quando é o PRÓPRIO Ghost quem fala,
+        # o Rz" agora só dispara quando é o PRÓPRIO Rz quem fala,
         # não mais só por ser @mencionado por outra pessoa. A piada do
         # "tiro" continua reagindo na hora, sem cooldown, mas também só
-        # quando é o Ghost quem manda a mensagem
+        # quando é o Rz quem manda a mensagem
         if message.author.id == GHOST_USER_ID:
             # a brincadeira do "tiro" tem prioridade e reage na hora,
             # sem cooldown — é a piada clássica dele
@@ -1209,8 +1209,8 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 await message.reply(random.choice(_INTERACOES_GHOST), mention_author=False)
                 return
 
-        # ── Interação especial com a namorada do Ghost ──────────────
-        # CORREÇÃO (v1.3): mesma correção do Draw e do Ghost — só
+        # ── Interação especial com a namorada do Rz ─────────────────
+        # CORREÇÃO (v1.3): mesma correção do Draw e do Rz — só
         # dispara quando é ela mesma quem fala, no máximo 1x a cada 30
         # minutos, com uma chance aleatória depois que o cooldown libera
         if message.author.id == GHOST_NAMORADA_USER_ID:
@@ -1225,8 +1225,8 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 return
 
         # ── Interação especial com a Dalia ───────────────────────────
-        # CORREÇÃO (v1.3): mesma correção do Draw, Ghost e namorada do
-        # Ghost — só dispara quando é ela mesma quem fala, no máximo 1x
+        # CORREÇÃO (v1.3): mesma correção do Draw, Rz e namorada do
+        # Rz — só dispara quando é ela mesma quem fala, no máximo 1x
         # a cada 30 minutos, com uma chance aleatória depois que o
         # cooldown libera
         if message.author.id == DALIA_USER_ID:
@@ -1241,7 +1241,7 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 return
 
         # ── Interação especial com a Orochi ─────────────────────────
-        # CORREÇÃO (v1.3): mesma correção do Draw, Ghost e Dalia — só
+        # CORREÇÃO (v1.3): mesma correção do Draw, Rz e Dalia — só
         # dispara quando é ela mesma quem fala, no máximo 1x a cada 30
         # minutos, com uma chance aleatória depois que o cooldown libera
         if message.author.id == OROCHI_USER_ID:
@@ -1256,7 +1256,7 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
                 return
 
         # ── Interação especial com o Felipe ─────────────────────────
-        # CORREÇÃO (v1.3): mesma correção do Draw, Ghost, Dalia e
+        # CORREÇÃO (v1.3): mesma correção do Draw, Rz, Dalia e
         # Orochi — só dispara quando é ele mesmo quem fala, no máximo
         # 1x a cada 30 minutos, com uma chance aleatória depois que o
         # cooldown libera
