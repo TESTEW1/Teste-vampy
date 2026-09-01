@@ -1024,6 +1024,106 @@ def _checar_gatilho_ataque(texto: str) -> str | None:
 
 
 # ══════════════════════════════════════════════════════════════════
+#  🦇🩸 PEDIDO PRA VAMPY BEBER O SANGUE DE ALGUÉM
+# ══════════════════════════════════════════════════════════════════
+# vale pra QUALQUER pessoa que mandar esse tipo de mensagem — ex:
+# "Vampy tome o sangue do Gold", "bebe o sangue dele", "morde o
+# Fulano" etc. Se a mensagem citar/marcar alguém (@menção de verdade)
+# ela usa o nome de quem foi marcado; senão, tenta pegar o nome que
+# veio escrito em texto puro depois de "sangue do/da/de" (ex: "Gold"
+# na frase "tome o sangue do Gold" — nem sempre tem @menção de
+# verdade nesse tipo de pedido); se não achar nada, usa uma resposta
+# genérica. Reage na hora, sem cooldown, igual às outras reações de
+# ataque
+
+_PADROES_SANGUE_ORDEM = [
+    r"tome\s+(?:o\s+)?sangue",
+    r"toma\s+(?:o\s+)?sangue",
+    r"beba\s+(?:o\s+)?sangue",
+    r"bebe\s+(?:o\s+)?sangue",
+    r"chupa\s+(?:o\s+)?sangue",
+    r"chupe\s+(?:o\s+)?sangue",
+    r"suga\s+(?:o\s+)?sangue",
+    r"sugue\s+(?:o\s+)?sangue",
+    r"morde\s+(?:o|a)\s",
+    r"morda\s+(?:o|a)\s",
+]
+
+_PADRAO_ALVO_SANGUE_TEXTO = re.compile(
+    r"sangue\s+(?:do|da|dos|das|de)\s+@?([A-Za-zÀ-ÿ0-9_]+)", re.IGNORECASE
+)
+
+
+def _checar_gatilho_sangue_ordem(texto: str) -> bool:
+    texto_lower = texto.lower()
+    return any(re.search(padrao, texto_lower) for padrao in _PADROES_SANGUE_ORDEM)
+
+
+def _extrair_alvo_sangue_texto(message: discord.Message) -> str | None:
+    """Tenta pegar o nome escrito em texto puro logo depois de
+    'sangue do/da/de' (ex: 'tome o sangue do Gold' -> 'Gold'), pra
+    usar na resposta mesmo quando ninguém foi @mencionado de
+    verdade — esse tipo de pedido geralmente cita o nome sem marcar."""
+    m = _PADRAO_ALVO_SANGUE_TEXTO.search(message.content)
+    if not m:
+        return None
+    nome = m.group(1).strip()
+    if not nome:
+        return None
+    return nome
+
+
+_RESPOSTAS_SANGUE_ORDEM_COM_ALVO = [
+    "*presinhas à mostra* com prazer!! *morde {alvo} e bebe até se satisfazer* 🩸😈🦇",
+    "AEHÊ, finalmente um convite decente!! *voa até {alvo} e crava as presinhas* 🩸🦇🖤",
+    "*lambe os lábios* {alvo} nem vai sentir (mentira) *morde* 🩸😈🦇",
+    "com certeza!! *suga o sangue de {alvo} bem devagar* delícia 🩸🦇✨",
+    "*sorriso maligno abrindo as presinhas* {alvo}, prepare o pescoço 🩸😈🦇",
+    "*voa em direção a {alvo}* hora do lanchinho!! 🩸🦇🖤",
+]
+
+_RESPOSTAS_SANGUE_ORDEM_SEM_ALVO = [
+    "*presinhas à mostra* com prazer!! só me aponta quem vai ser o lanche 🩸😈🦇",
+    "AEHÊ, adoro um convite desses!! quem vai ser a vítima?? 🩸🦇🖤",
+    "*lambe os lábios* hmm, só falta escolher o pescoço certo 🩸😈🦇",
+    "com certeza!! só me diz em quem eu crava as presinhas 🩸🦇✨",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
+#  🦇🩸 OFERTA DE SANGUE PRA VAMPY (ex: "quer sangue vampy?")
+# ══════════════════════════════════════════════════════════════════
+# quando alguém oferece o PRÓPRIO sangue pra ela beber — reage na
+# hora, sem cooldown, toda animada porque é o prato favorito dela
+
+_PADROES_SANGUE_OFERTA = [
+    r"quer\s+(?:meu\s+|minha\s+|o\s+)?sangue",
+    r"vampy\s+quer\s+sangue",
+    r"posso\s+te\s+dar\s+(?:meu\s+|minha\s+)?sangue",
+    r"toma\s+(?:meu\s+|minha\s+)?sangue",
+    r"aceita\s+(?:meu\s+|minha\s+)?sangue",
+    r"quer\s+me\s+morder",
+    r"pode\s+me\s+morder",
+]
+
+
+def _checar_gatilho_sangue_oferta(texto: str) -> bool:
+    texto_lower = texto.lower()
+    return any(re.search(padrao, texto_lower) for padrao in _PADROES_SANGUE_OFERTA)
+
+
+_RESPOSTAS_SANGUE_OFERTA = [
+    "*desce voando de cabeça pra baixo* SIIIM, quero sim!! 🦇🩸🖤",
+    "*mostra as presinhas toda animada* claro que quero, chega mais 🩸😈🦇",
+    "AEHÊÊ, finalmente alguém oferece direito!! *se aproxima com cuidado* 🩸🦇✨",
+    "*lambe os lábios* nem precisava perguntar duas vezes... 🩸😈🦇",
+    "owwn, que gentileza!! *pousa e morde de leve* 🩸🦇🖤",
+    "*bate as asinhas animada* SIM SIM SIM!! deixa eu provar 🩸🦇✨",
+    "*se aproxima devagar, olhos brilhando* com certeza eu quero 🩸😈🦇",
+]
+
+
+# ══════════════════════════════════════════════════════════════════
 #  🦇  CONVITE PRA PREGAR UMA PEÇA (ex: "vamos pregar uma peça",
 #      "Vampy, vamos aprontar uma peça no @Fulano")
 # ══════════════════════════════════════════════════════════════════
@@ -1441,6 +1541,34 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
             async with message.channel.typing():
                 await asyncio.sleep(random.uniform(0.5, 1.2))
             await message.reply(resposta_ataque, mention_author=False)
+            return
+
+        # ── Pedido pra Vampy beber o sangue de alguém ────────────────
+        # ex: "Vampy tome o sangue do Gold", "morde o Fulano" — reage
+        # na hora, sem cooldown. Se citar/marcar alguém (@menção de
+        # verdade) usa o nome de quem foi marcado; senão tenta pegar o
+        # nome escrito em texto puro depois de "sangue do/da" (ex:
+        # "Gold"); se não achar nada, usa uma resposta genérica
+        if _checar_gatilho_sangue_ordem(message.content):
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            alvo = _extrair_alvo_mencao(message, self.bot.user) or _extrair_alvo_sangue_texto(message)
+            if alvo:
+                resposta_sangue = random.choice(_RESPOSTAS_SANGUE_ORDEM_COM_ALVO).format(alvo=alvo)
+            else:
+                resposta_sangue = random.choice(_RESPOSTAS_SANGUE_ORDEM_SEM_ALVO)
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.5, 1.2))
+            await message.reply(resposta_sangue, mention_author=False)
+            return
+
+        # ── Oferta de sangue pra Vampy (ex: "quer sangue vampy?") ────
+        # reage na hora, sem cooldown — alguém oferecendo o próprio
+        # sangue pra ela beber, o prato favorito dela
+        if _checar_gatilho_sangue_oferta(message.content):
+            self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
+            async with message.channel.typing():
+                await asyncio.sleep(random.uniform(0.5, 1.2))
+            await message.reply(random.choice(_RESPOSTAS_SANGUE_OFERTA), mention_author=False)
             return
 
         # ── Convite pra pregar uma peça (ex: "vamos pregar uma peça",
