@@ -160,6 +160,12 @@ LAI_APELIDOS = ["lai"]
 # propósito, no máximo 1 a cada ~13 horas, com ou sem citar alguém
 APARICAO_ESPONTANEA_COOLDOWN_SEGUNDOS = 13 * 60 * 60  # 13 horas
 
+# ── Boas-vindas quando alguém entra no servidor ────────────────────
+# canal onde a Vampy manda o aviso fofo de boas-vindas
+BOAS_VINDAS_CANAL_ID = 1485643096661430342
+# canal pro qual a pessoa deve ir (ex: regras/verificação)
+BOAS_VINDAS_CANAL_DESTINO_ID = 1485783317927170100
+
 # ══════════════════════════════════════════════════════════════════
 #  🤖  SETUP DO BOT
 # ══════════════════════════════════════════════════════════════════
@@ -182,6 +188,24 @@ COR_ROSA        = 0xFF2E9A   # rosa choque, atentada
 COR_VERDE       = 0x00e676   # verde OK
 COR_VERMELHO    = 0xFF5252   # erro / aviso
 COR_DOURADO     = 0xFFD700   # especial
+
+# ══════════════════════════════════════════════════════════════════
+#  🦇  MENSAGENS FOFAS DE BOAS-VINDAS (entrada no servidor)
+# ══════════════════════════════════════════════════════════════════
+# disparadas em BOAS_VINDAS_CANAL_ID sempre que alguém entra no
+# servidor, direcionando a pessoa pra BOAS_VINDAS_CANAL_DESTINO_ID.
+# {membro} = menção da pessoa que entrou, {canal} = menção do canal
+# de destino
+
+_MENSAGENS_BOAS_VINDAS = [
+    "*pousa toda animada* eeee, chegou gente nova!! {membro} vai em {canal} 🦇💜",
+    "*voa em círculos de felicidade* olha quem apareceu!! {membro}, corre em {canal} 🦇✨",
+    "*se pendura de cabeça pra baixo pra dar boas-vindas* oii {membro}!! vai em {canal} primeiro, tá?? 🦇🖤",
+    "AEHÊ, mais um(a) pro ninho!! {membro} vai em {canal} 🦇💫",
+    "*bate as asinhas toda contente* bem-vindo(a), {membro}!! passa em {canal} antes de mais nada 🦇💜",
+    "*aparece do nada pra receber* oiii {membro}!! seu próximo passo é {canal} 🦇✨",
+    "*acena com a asinha* seja bem-vindo(a), {membro}!! te espero em {canal} 🦇🖤",
+]
 
 # ══════════════════════════════════════════════════════════════════
 #  💾  PERSISTÊNCIA DO APRENDIZADO DE DIÁLOGO
@@ -1742,6 +1766,26 @@ async def on_ready():
             name="a galera de cabeça pra baixo 🦇🖤"
         )
     )
+
+
+@bot.event
+async def on_member_join(member: discord.Member):
+    """🦇 Boas-vindas fofas: sempre que alguém entra no servidor, a
+    Vampy manda uma mensagem em BOAS_VINDAS_CANAL_ID direcionando a
+    pessoa pra BOAS_VINDAS_CANAL_DESTINO_ID."""
+    canal = member.guild.get_channel(BOAS_VINDAS_CANAL_ID)
+    if canal is None:
+        return
+
+    destino = f"<#{BOAS_VINDAS_CANAL_DESTINO_ID}>"
+    texto = random.choice(_MENSAGENS_BOAS_VINDAS).format(
+        membro=member.mention,
+        canal=destino,
+    )
+
+    async with canal.typing():
+        await asyncio.sleep(random.uniform(0.6, 1.4))
+    await canal.send(texto)
 
 
 @bot.command(name="help", aliases=["ajuda", "h"])
