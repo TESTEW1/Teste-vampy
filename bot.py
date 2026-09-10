@@ -925,8 +925,9 @@ _INTERACOES_FELIPE = [
 # ══════════════════════════════════════════════════════════════════
 #  🦇⚡ INTERAÇÕES ÉPICAS COM O GUEZERA (a cada 30 minutos)
 # ══════════════════════════════════════════════════════════════════
-# mesma lógica das outras interações especiais, só que com um tom bem
-# mais grandioso — dispara quando ele fala, no máximo 1x a cada 30 min
+# mesma lógica das outras: só dispara quando é o PRÓPRIO
+# Guezera quem fala, no máximo 1x a cada 30 minutos, com uma
+# chance aleatória depois que o cooldown libera
 
 _INTERACOES_GUEZERA = [
     "⚡ AS LENDAS FALAM A VERDADE... GUEZERA CHEGOU!! 🦇🔥",
@@ -1791,8 +1792,8 @@ RANK_AUTORIZADO_USER_ID = 1527740671027314752
 RANK_AUTORIZADO_CARGO_ID = 1530798097133998121
 
 # cargo -> bloodline (usado pra descobrir de quem é o post marcado)
-CARGO_STEFAN_ID = 1537178953381584987
-CARGO_DAMON_ID = 1539304233357283469
+CARGO_STEFAN_ID = 1547741167314276393
+CARGO_DAMON_ID = 1547732494642847785
 
 # nível (1 a 5) -> % aplicada na bloodline marcada no post
 NIVEL_PORCENTAGENS = {1: 5.0, 2: 7.5, 3: 10.0, 4: 12.5, 5: 15.0}
