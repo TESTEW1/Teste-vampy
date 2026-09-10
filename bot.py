@@ -2,7 +2,7 @@
 ╔══════════════════════════════════════════════════════════════════╗
 ║                    🦇  VAMPY BOT  🖤                             ║
 ║             Uma morceguinha alegre e atentada                    ║
-║                         v1.3 — Online                            ║
+║                         v1.4 — Online                            ║
 ╚══════════════════════════════════════════════════════════════════╝
 
 Inspirada na Lilu 🐱 — mesma alma cheia de carinho, agora com asinhas
@@ -12,6 +12,26 @@ peguinhas e responde a galera igualzinho a Lilu faz.
 Módulos:
   • Diálogo — Vampy aprende a conversar, responde gatilhos e
               aparece do nada de vez em quando pra dar as caras
+
+Changelog v1.4:
+  • CORRIGIDO: o placar da Guerra das Bloodlines podia acabar sendo
+    mandado (e fixado) DUAS vezes se a Vampy perdesse o ID salvo da
+    mensagem (ex: reinício do bot sem os dados persistirem). Agora,
+    antes de criar uma mensagem nova, ela procura entre as mensagens
+    FIXADAS do canal se já existe um placar dela pra reaproveitar, e
+    qualquer duplicata que tenha sobrado é apagada automaticamente.
+    Também corrigido um bug em que um erro passageiro (ex: rate
+    limit) ao buscar a mensagem salva fazia a Vampy criar uma nova
+    por engano, achando que a antiga tinha desaparecido. Novo comando
+    `v!fixarplacar` (Gerenciar Servidor) força essa reconciliação na
+    hora, sem precisar reiniciar o bot.
+  • CORRIGIDO: no canal de recrutamento, marcar o CARGO da bloodline
+    diretamente (ex: @Stefan - Bloodline, a role em si) não era
+    reconhecido como "citou a bloodline" — só contava marcar um
+    MEMBRO que já tivesse aquele cargo. Isso fazia a Vampy avisar
+    "faltou marcar @Stefan ou @Damon" mesmo quando a pessoa tinha
+    marcado certinho, só que marcando a role em vez de uma pessoa.
+    Agora marcar o cargo diretamente também conta.
 
 Changelog v1.3:
   • CORRIGIDO: as reações personalizadas de "opa, chegou o Fulano!!"
@@ -655,6 +675,17 @@ def _ids_mencionados_diretamente(message: discord.Message) -> set[int]:
     menção que só apareça por causa de um reply com notificação
     ligada."""
     return {int(uid) for uid in re.findall(r"<@!?(\d+)>", message.content)}
+
+
+def _ids_de_cargos_mencionados_diretamente(message: discord.Message) -> set[int]:
+    """Mesma lógica de `_ids_mencionados_diretamente`, só que pra
+    CARGOS (roles) em vez de usuários — retorna os IDs de cargos que
+    foram @mencionados de verdade no texto cru da mensagem (ex:
+    <@&ID>, que é como fica quando alguém marca @NomeDoCargo).
+    Usado pro canal de recrutamento reconhecer quando alguém marca a
+    role da bloodline diretamente (ex: @Stefan - Bloodline), e não só
+    quando marca uma pessoa que tem esse cargo."""
+    return {int(rid) for rid in re.findall(r"<@&(\d+)>", message.content)}
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1853,16 +1884,37 @@ def _bloodline_do_membro(membro: discord.abc.User) -> str | None:
 def _extrair_bloodlines_mencionadas(message: discord.Message) -> set[str]:
     """Olha só pras @menções DIGITADAS de verdade (mesma lógica usada
     no resto do bot, ver `_ids_mencionados_diretamente`) e retorna o
-    conjunto de bloodlines representadas entre elas. Se a mensagem
-    marcar duas pessoas da MESMA bloodline, ainda conta como um
-    conjunto de tamanho 1 (só aquela bloodline)."""
+    conjunto de bloodlines representadas entre elas. Considera DOIS
+    jeitos de citar uma bloodline, e qualquer um dos dois conta:
+
+      1) marcando o CARGO da bloodline diretamente (ex: a pessoa
+         digita @Stefan - Bloodline e marca a role em si) — ver
+         `_ids_de_cargos_mencionados_diretamente`. CORREÇÃO: antes
+         isso NÃO era reconhecido, só contava marcar uma pessoa que
+         já tivesse o cargo — então quem marcava a role em vez de um
+         membro caía sempre no aviso de "faltou marcar", mesmo tendo
+         marcado do jeito certo.
+      2) marcando um MEMBRO que tenha o cargo daquela bloodline.
+
+    Se a mensagem marcar duas pessoas/cargos da MESMA bloodline,
+    ainda conta como um conjunto de tamanho 1 (só aquela bloodline)."""
+    bloodlines = set()
+
+    # 1) cargo da bloodline mencionado diretamente (a role em si)
+    ids_cargos_diretos = _ids_de_cargos_mencionados_diretamente(message)
+    if CARGO_STEFAN_ID in ids_cargos_diretos:
+        bloodlines.add("stefan")
+    if CARGO_DAMON_ID in ids_cargos_diretos:
+        bloodlines.add("damon")
+
+    # 2) membro mencionado que tenha o cargo da bloodline
     ids_diretos = _ids_mencionados_diretamente(message)
     membros = [m for m in message.mentions if m.id in ids_diretos]
-    bloodlines = set()
     for membro in membros:
         bloodline = _bloodline_do_membro(membro)
         if bloodline:
             bloodlines.add(bloodline)
+
     return bloodlines
 
 
@@ -1925,10 +1977,61 @@ class RankCog(commands.Cog, name="VampyRank"):
             embed.set_footer(text="🦇 Vampy • placar atualizado automaticamente")
         return embed
 
+    async def _achar_placar_existente_fixado(self, canal) -> discord.Message | None:
+        """CORREÇÃO: quando a Vampy perde o ID salvo da mensagem do
+        placar (ex: o bot reinicia sem o arquivo de dados persistir —
+        foi exatamente isso que causou o placar sendo mandado/fixado
+        DUAS vezes), ela procura entre as mensagens FIXADAS do canal
+        se já existe um placar dela ali, em vez de assumir que não
+        tem nenhum e mandar um novo. Se achar mais de um (sobra de
+        uma duplicata antiga), pega o mais recente pra reaproveitar."""
+        try:
+            fixadas = await canal.pins()
+        except discord.HTTPException as e:
+            print(f"[RankCog] erro buscando mensagens fixadas do placar: {e}")
+            return None
+        candidatos = [
+            m for m in fixadas
+            if m.author.id == self.bot.user.id
+            and m.embeds
+            and m.embeds[0].title == "🩸 Guerra das Bloodlines 🩸"
+        ]
+        if not candidatos:
+            return None
+        candidatos.sort(key=lambda m: m.created_at)
+        return candidatos[-1]
+
+    async def _limpar_placares_duplicados(self, canal, manter_id: int):
+        """CORREÇÃO: apaga (desfixa + deleta) qualquer mensagem de
+        placar duplicada que tenha sobrado no canal — só a mensagem
+        com id == manter_id deve continuar fixada."""
+        try:
+            fixadas = await canal.pins()
+        except discord.HTTPException:
+            return
+        duplicatas = [
+            m for m in fixadas
+            if m.id != manter_id
+            and m.author.id == self.bot.user.id
+            and m.embeds
+            and m.embeds[0].title == "🩸 Guerra das Bloodlines 🩸"
+        ]
+        for dup in duplicatas:
+            try:
+                await dup.unpin()
+            except discord.HTTPException:
+                pass
+            try:
+                await dup.delete()
+            except discord.HTTPException:
+                pass
+
     async def _garantir_mensagem_placar(self):
         """Busca (ou cria, na primeira vez) a mensagem fixa do placar
         e deixa guardada em self._msg_placar. Nunca manda uma segunda
-        mensagem nova — só cria se realmente não existir mais."""
+        mensagem nova — só cria se realmente não existir mais (nem
+        salva, nem fixada no canal). Qualquer duplicata que tenha
+        sobrado de uma falha anterior é apagada automaticamente."""
         canal = self.bot.get_channel(PLACAR_CANAL_ID)
         if canal is None:
             try:
@@ -1945,7 +2048,17 @@ class RankCog(commands.Cog, name="VampyRank"):
             except discord.NotFound:
                 msg = None
             except discord.HTTPException as e:
+                # CORREÇÃO: um erro passageiro (rate limit, rede etc.)
+                # aqui NÃO pode fazer a Vampy pensar que a mensagem não
+                # existe e criar uma nova — isso que causava a
+                # duplicata. Só loga e desiste dessa tentativa.
                 print(f"[RankCog] erro buscando a mensagem do placar: {e}")
+                return
+
+        # CORREÇÃO: perdeu o ID salvo? antes de criar uma mensagem
+        # nova, procura entre as fixadas do canal se já não existe uma
+        if msg is None:
+            msg = await self._achar_placar_existente_fixado(canal)
 
         if msg is None:
             msg = await canal.send(embed=self._montar_embed_placar())
@@ -1956,12 +2069,20 @@ class RankCog(commands.Cog, name="VampyRank"):
             self.db["scoreboard_message_id"] = msg.id
             self._salvar()
         else:
+            if msg.id != self.db.get("scoreboard_message_id"):
+                self.db["scoreboard_message_id"] = msg.id
+                self._salvar()
             try:
                 await msg.edit(embed=self._montar_embed_placar())
             except discord.HTTPException:
                 pass
 
         self._msg_placar = msg
+
+        # CORREÇÃO: se sobrou alguma duplicata de uma falha anterior
+        # (como as duas mensagens fixadas que apareceram no canal),
+        # apaga todas exceto a que estamos usando agora
+        await self._limpar_placares_duplicados(canal, manter_id=msg.id)
 
     async def _atualizar_placar(self):
         if self._msg_placar is None:
@@ -2177,6 +2298,21 @@ class RankCog(commands.Cog, name="VampyRank"):
         """Bônus: mostra o placar atual na hora, sem precisar ir no
         canal fixo. Remove esse comando se não quiser."""
         await ctx.send(embed=self._montar_embed_placar())
+
+    @commands.command(name="fixarplacar")
+    @commands.has_permissions(manage_guild=True)
+    async def fixarplacar(self, ctx: commands.Context):
+        """Força a Vampy a reconciliar o placar agora mesmo: reaproveita
+        a mensagem fixada existente (ou cria uma, se não achar nenhuma)
+        e apaga qualquer duplicata que tenha sobrado no canal. Útil pra
+        limpar duplicatas antigas sem precisar reiniciar o bot."""
+        self._msg_placar = None
+        await self._garantir_mensagem_placar()
+        await ctx.send(embed=discord.Embed(
+            title="🦇 Placar reconciliado!!",
+            description="chequei o canal do placar e deixei só uma mensagem fixada 🖤",
+            color=COR_VERDE,
+        ))
 
 
 # ══════════════════════════════════════════════════════════════════
