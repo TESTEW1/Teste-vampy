@@ -64,8 +64,20 @@ load_dotenv()
 
 TOKEN = os.getenv("VAMPY_TOKEN") or os.getenv("TOKEN")
 
+# Resolve o caminho de um arquivo de dados persistentes. Se existir uma
+# pasta /data (ex: volume persistente do Railway — configurável via a
+# env var VAMPY_DATA_DIR), os arquivos são salvos lá, pra sobreviverem
+# a redeploys. Se não existir (ex: rodando local na sua máquina), cai
+# pro diretório onde o script está
+def _resolver_caminho_dados(nome_arquivo: str) -> str:
+    pasta = os.getenv("VAMPY_DATA_DIR", "/data")
+    if os.path.isdir(pasta):
+        return os.path.join(pasta, nome_arquivo)
+    return nome_arquivo
+
+
 # Arquivo de aprendizado de diálogo
-DIALOGO_FILE = "vampy_dialogo.json"
+DIALOGO_FILE = _resolver_caminho_dados("vampy_dialogo.json")
 
 # ID do Draw — recebe interações especiais e personalizadas (limitadas
 # a 1 a cada 30 minutos, pra não ficar repetitivo). IMPORTANTE: essa
@@ -1749,6 +1761,424 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
 
 
 # ══════════════════════════════════════════════════════════════════
+#  🩸  RANK DAS BLOODLINES — placar + canal de recrutamento
+# ══════════════════════════════════════════════════════════════════
+# Duas "bloodlines" (Stefan e Damon) competem pra bater 100% primeiro.
+#
+#  • Canal do placar: a Vampy cria (uma única vez) uma mensagem fixa
+#    com um embed de barra de progresso e a fixa (pin). A partir daí
+#    ela NUNCA manda uma mensagem nova pra isso — só edita a mesma,
+#    inclusive assim que o bot liga (mesmo que esteja tudo 0%).
+#  • Canal de recrutamento: toda mensagem precisa marcar @Stefan OU
+#    @Damon (nunca os dois, nunca nenhum) + ter uma justificativa de
+#    verdade. Se não seguir a regra, a Vampy avisa e apaga a mensagem
+#    + o aviso 10 segundos depois.
+#  • `v!nivel <1-5>` (só quem foi autorizado): usado respondendo
+#    (reply) a um post de recrutamento, aplica a % daquele nível na
+#    bloodline marcada naquele post. Nunca deixa nivelar o mesmo post
+#    duas vezes.
+#  • `v!reiniciar rank` (Gerenciar Servidor): zera tudo, 0% pros dois,
+#    sem vencedor.
+
+# canal onde fica a mensagem fixa do placar
+PLACAR_CANAL_ID = 1531708503427907584
+
+# canal de recrutamento, com a regra de menção + justificativa
+RECRUTAMENTO_CANAL_ID = 1546617197680394382
+
+# quem pode usar v!nivel: esse usuário específico OU quem tiver esse cargo
+RANK_AUTORIZADO_USER_ID = 1527740671027314752
+RANK_AUTORIZADO_CARGO_ID = 1530798097133998121
+
+# cargo -> bloodline (usado pra descobrir de quem é o post marcado)
+CARGO_STEFAN_ID = 1537178953381584987
+CARGO_DAMON_ID = 1539304233357283469
+
+# nível (1 a 5) -> % aplicada na bloodline marcada no post
+NIVEL_PORCENTAGENS = {1: 5.0, 2: 7.5, 3: 10.0, 4: 12.5, 5: 15.0}
+
+# tamanho mínimo do texto (só letras/números, sem contar menções e
+# pontuação solta) pra contar como "justificativa de verdade" e não só
+# a marcação vazia — ajuste esse número se quiser mais ou menos rigor
+JUSTIFICATIVA_MIN_CARACTERES = 10
+
+RANK_FILE = _resolver_caminho_dados("vampy_rank.json")
+
+
+def _carregar_rank() -> dict:
+    padrao = {
+        "stefan_pct": 0.0,
+        "damon_pct": 0.0,
+        "scoreboard_message_id": None,
+        "vencedor_anunciado": None,   # None | "stefan" | "damon"
+        "posts_nivelados": {},        # {"<message_id>": {...}}
+    }
+    if os.path.exists(RANK_FILE):
+        try:
+            with open(RANK_FILE, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+            padrao.update(dados)
+        except Exception:
+            pass
+    return padrao
+
+
+def _salvar_rank(db: dict):
+    with open(RANK_FILE, "w", encoding="utf-8") as f:
+        json.dump(db, f, ensure_ascii=False, indent=2)
+
+
+def _barra_progresso(pct: float, tamanho: int = 20) -> str:
+    pct = max(0.0, min(100.0, pct))
+    preenchido = round((pct / 100) * tamanho)
+    return "🟪" * preenchido + "⬜" * (tamanho - preenchido)
+
+
+def _bloodline_do_membro(membro: discord.abc.User) -> str | None:
+    """Descobre a bloodline de um membro a partir dos cargos dele.
+    Retorna None se ele não tiver nenhum dos dois cargos (ex: é um
+    User comum sem cache de membro, ou realmente não tem o cargo)."""
+    cargos = getattr(membro, "roles", None)
+    if not cargos:
+        return None
+    ids_cargos = {c.id for c in cargos}
+    if CARGO_STEFAN_ID in ids_cargos:
+        return "stefan"
+    if CARGO_DAMON_ID in ids_cargos:
+        return "damon"
+    return None
+
+
+def _extrair_bloodlines_mencionadas(message: discord.Message) -> set[str]:
+    """Olha só pras @menções DIGITADAS de verdade (mesma lógica usada
+    no resto do bot, ver `_ids_mencionados_diretamente`) e retorna o
+    conjunto de bloodlines representadas entre elas. Se a mensagem
+    marcar duas pessoas da MESMA bloodline, ainda conta como um
+    conjunto de tamanho 1 (só aquela bloodline)."""
+    ids_diretos = _ids_mencionados_diretamente(message)
+    membros = [m for m in message.mentions if m.id in ids_diretos]
+    bloodlines = set()
+    for membro in membros:
+        bloodline = _bloodline_do_membro(membro)
+        if bloodline:
+            bloodlines.add(bloodline)
+    return bloodlines
+
+
+def _tem_justificativa(message: discord.Message) -> bool:
+    """Remove menções (@usuário, @cargo, #canal) do texto e checa se
+    sobrou conteúdo de verdade (letras/números) — pra não deixar
+    passar uma mensagem que é só a marcação vazia."""
+    texto = re.sub(r"<@!?\d+>|<@&\d+>|<#\d+>", "", message.content)
+    texto_limpo = re.sub(r"[^\wÀ-ÿ]", "", texto)
+    return len(texto_limpo) >= JUSTIFICATIVA_MIN_CARACTERES
+
+
+def _autorizado_para_nivelar(autor: discord.abc.User) -> bool:
+    if autor.id == RANK_AUTORIZADO_USER_ID:
+        return True
+    return any(c.id == RANK_AUTORIZADO_CARGO_ID for c in getattr(autor, "roles", []))
+
+
+def _checagem_nivel():
+    async def predicate(ctx: commands.Context) -> bool:
+        return _autorizado_para_nivelar(ctx.author)
+    return commands.check(predicate)
+
+
+class RankCog(commands.Cog, name="VampyRank"):
+    """🩸 Placar da guerra das bloodlines + regras do canal de recrutamento."""
+
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        self.db = _carregar_rank()
+        self._msg_placar: discord.Message | None = None
+
+    def _salvar(self):
+        _salvar_rank(self.db)
+
+    def _montar_embed_placar(self) -> discord.Embed:
+        stefan_pct = self.db.get("stefan_pct", 0.0)
+        damon_pct = self.db.get("damon_pct", 0.0)
+        embed = discord.Embed(
+            title="🩸 Guerra das Bloodlines 🩸",
+            description="quem vai bater 100% primeiro?? 😈🦇",
+            color=COR_ROXA_ESCURA,
+            timestamp=datetime.now(timezone.utc),
+        )
+        embed.add_field(
+            name="🔵 Stefan",
+            value=f"{_barra_progresso(stefan_pct)}  **{stefan_pct:.1f}%**",
+            inline=False,
+        )
+        embed.add_field(
+            name="🔴 Damon",
+            value=f"{_barra_progresso(damon_pct)}  **{damon_pct:.1f}%**",
+            inline=False,
+        )
+        vencedor = self.db.get("vencedor_anunciado")
+        if vencedor:
+            nome = "Stefan" if vencedor == "stefan" else "Damon"
+            embed.set_footer(text=f"🏆 {nome} já venceu essa rodada!! use v!reiniciar rank pra zerar")
+        else:
+            embed.set_footer(text="🦇 Vampy • placar atualizado automaticamente")
+        return embed
+
+    async def _garantir_mensagem_placar(self):
+        """Busca (ou cria, na primeira vez) a mensagem fixa do placar
+        e deixa guardada em self._msg_placar. Nunca manda uma segunda
+        mensagem nova — só cria se realmente não existir mais."""
+        canal = self.bot.get_channel(PLACAR_CANAL_ID)
+        if canal is None:
+            try:
+                canal = await self.bot.fetch_channel(PLACAR_CANAL_ID)
+            except discord.HTTPException as e:
+                print(f"[RankCog] não achei o canal do placar ({PLACAR_CANAL_ID}): {e}")
+                return
+
+        msg = None
+        msg_id = self.db.get("scoreboard_message_id")
+        if msg_id:
+            try:
+                msg = await canal.fetch_message(msg_id)
+            except discord.NotFound:
+                msg = None
+            except discord.HTTPException as e:
+                print(f"[RankCog] erro buscando a mensagem do placar: {e}")
+
+        if msg is None:
+            msg = await canal.send(embed=self._montar_embed_placar())
+            try:
+                await msg.pin()
+            except discord.HTTPException:
+                pass  # sem permissão de fixar, segue o jogo mesmo assim
+            self.db["scoreboard_message_id"] = msg.id
+            self._salvar()
+        else:
+            try:
+                await msg.edit(embed=self._montar_embed_placar())
+            except discord.HTTPException:
+                pass
+
+        self._msg_placar = msg
+
+    async def _atualizar_placar(self):
+        if self._msg_placar is None:
+            await self._garantir_mensagem_placar()
+            return
+        try:
+            await self._msg_placar.edit(embed=self._montar_embed_placar())
+        except discord.HTTPException:
+            # a mensagem pode ter sido apagada manualmente — tenta recriar
+            self._msg_placar = None
+            await self._garantir_mensagem_placar()
+
+    async def _anunciar_vitoria(self, bloodline: str):
+        canal = self.bot.get_channel(PLACAR_CANAL_ID)
+        if canal is None:
+            return
+        nome = "Stefan" if bloodline == "stefan" else "Damon"
+        emoji = "🔵" if bloodline == "stefan" else "🔴"
+        embed = discord.Embed(
+            title=f"{emoji} A BLOODLINE {nome.upper()} VENCEU!! {emoji}",
+            description=f"o time do {nome} bateu 100% primeiro!! 🩸🦇👑",
+            color=COR_DOURADO,
+            timestamp=datetime.now(timezone.utc),
+        )
+        await canal.send(embed=embed)
+
+    async def _aplicar_nivel(self, bloodline: str, nivel: int) -> float:
+        pct = NIVEL_PORCENTAGENS[nivel]
+        chave = f"{bloodline}_pct"
+        novo_valor = min(100.0, self.db.get(chave, 0.0) + pct)
+        self.db[chave] = novo_valor
+        self._salvar()
+        await self._atualizar_placar()
+
+        if novo_valor >= 100.0 and self.db.get("vencedor_anunciado") != bloodline:
+            self.db["vencedor_anunciado"] = bloodline
+            self._salvar()
+            await self._anunciar_vitoria(bloodline)
+
+        return novo_valor
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        # garante que o placar aparece (mesmo vazio, 0%/0%) assim que
+        # o bot liga — só cria a mensagem na primeira vez, depois disso
+        # é sempre a mesma mensagem sendo editada
+        try:
+            await self._garantir_mensagem_placar()
+        except Exception as e:
+            print(f"[RankCog] falha ao montar o placar no on_ready: {e}")
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author.bot or not message.guild:
+            return
+        if message.channel.id != RECRUTAMENTO_CANAL_ID:
+            return
+
+        # se for um comando de verdade (ex: v!nivel 4 em reply, dentro
+        # desse mesmo canal), deixa passar — não é um "post de
+        # recrutamento" novo, é o admin nivelando um post existente
+        ctx = await self.bot.get_context(message)
+        if ctx.valid:
+            return
+
+        bloodlines = _extrair_bloodlines_mencionadas(message)
+        if len(bloodlines) == 1 and _tem_justificativa(message):
+            return  # mensagem válida, não faz nada
+
+        if len(bloodlines) == 0:
+            motivo = "faltou marcar @Stefan ou @Damon nessa mensagem!!"
+        elif len(bloodlines) == 2:
+            motivo = "marca só UM dos dois, @Stefan OU @Damon, nunca os dois juntos!!"
+        else:
+            motivo = "faltou uma justificativa de verdade, não vale só a marcação vazia!!"
+
+        try:
+            aviso = await message.reply(
+                f"⚠️ {motivo} vou apagar em 10s, pode mandar de novo do jeito certo 🦇🖤",
+                mention_author=False,
+            )
+        except discord.HTTPException:
+            aviso = None
+
+        async def _apagar_depois():
+            await asyncio.sleep(10)
+            for alvo in (message, aviso):
+                if alvo is None:
+                    continue
+                try:
+                    await alvo.delete()
+                except discord.HTTPException:
+                    pass
+
+        asyncio.create_task(_apagar_depois())
+
+    @commands.command(name="nivel")
+    @_checagem_nivel()
+    async def nivel(self, ctx: commands.Context, nivel: int):
+        if nivel not in NIVEL_PORCENTAGENS:
+            await ctx.send(embed=discord.Embed(
+                title="🤔 Hmm!!",
+                description="o nível tem que ser de 1 a 5!! 🦇",
+                color=COR_VERMELHO,
+            ))
+            return
+
+        if ctx.message.reference is None:
+            await ctx.send(embed=discord.Embed(
+                title="🤔 Hmm!!",
+                description="usa esse comando RESPONDENDO (reply) ao post de recrutamento, viu?? 🦇",
+                color=COR_VERMELHO,
+            ))
+            return
+
+        ref = ctx.message.reference
+        post = ref.resolved
+        if post is None or isinstance(post, discord.DeletedReferencedMessage):
+            try:
+                post = await ctx.channel.fetch_message(ref.message_id)
+            except discord.HTTPException:
+                await ctx.send(embed=discord.Embed(
+                    title="🤔 Hmm!!",
+                    description="não achei a mensagem original que você respondeu 🦇",
+                    color=COR_VERMELHO,
+                ))
+                return
+
+        if str(post.id) in self.db["posts_nivelados"]:
+            info = self.db["posts_nivelados"][str(post.id)]
+            nome_antigo = "Stefan" if info["bloodline"] == "stefan" else "Damon"
+            await ctx.send(embed=discord.Embed(
+                title="🤔 Hmm!!",
+                description=(
+                    f"esse post já foi nivelado antes (nível {info['nivel']}, "
+                    f"+{info['pct_aplicado']}% pra {nome_antigo}) — não dá pra nivelar de novo 🦇"
+                ),
+                color=COR_VERMELHO,
+            ))
+            return
+
+        bloodlines = _extrair_bloodlines_mencionadas(post)
+        if len(bloodlines) != 1:
+            await ctx.send(embed=discord.Embed(
+                title="🤔 Hmm!!",
+                description="não consegui identificar a bloodline nesse post (precisa marcar @Stefan OU @Damon de verdade nele) 🦇",
+                color=COR_VERMELHO,
+            ))
+            return
+
+        bloodline = next(iter(bloodlines))
+        pct_aplicado = NIVEL_PORCENTAGENS[nivel]
+        novo_valor = await self._aplicar_nivel(bloodline, nivel)
+
+        self.db["posts_nivelados"][str(post.id)] = {
+            "nivel": nivel,
+            "bloodline": bloodline,
+            "pct_aplicado": pct_aplicado,
+            "por": ctx.author.id,
+            "em": datetime.now(timezone.utc).isoformat(),
+        }
+        self._salvar()
+
+        nome = "Stefan" if bloodline == "stefan" else "Damon"
+        await ctx.send(embed=discord.Embed(
+            title="🩸 Nivelado!!",
+            description=f"+{pct_aplicado}% pra **{nome}** (nível {nivel})\ntotal agora: **{novo_valor:.1f}%**",
+            color=COR_VERDE,
+        ))
+
+    @nivel.error
+    async def nivel_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.CheckFailure):
+            await ctx.send(embed=discord.Embed(
+                title="🚫 Não autorizado",
+                description="você não pode usar esse comando 🦇",
+                color=COR_VERMELHO,
+            ))
+        elif isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
+            await ctx.send(embed=discord.Embed(
+                title="🤔 Hmm!!",
+                description="usa assim: `v!nivel <1-5>` respondendo (reply) o post de recrutamento 🦇",
+                color=COR_VERMELHO,
+            ))
+        else:
+            raise error
+
+    @commands.command(name="reiniciar")
+    @commands.has_permissions(manage_guild=True)
+    async def reiniciar(self, ctx: commands.Context, *, alvo: str = None):
+        if not alvo or alvo.strip().lower() != "rank":
+            await ctx.send(embed=discord.Embed(
+                title="🤔 Hmm!!",
+                description="usa assim: `v!reiniciar rank` 🦇",
+                color=COR_VERMELHO,
+            ))
+            return
+
+        self.db["stefan_pct"] = 0.0
+        self.db["damon_pct"] = 0.0
+        self.db["vencedor_anunciado"] = None
+        self.db["posts_nivelados"] = {}
+        self._salvar()
+        await self._atualizar_placar()
+        await ctx.send(embed=discord.Embed(
+            title="🦇 Rank reiniciado!!",
+            description="zerei tudo, 0% pros dois, sem vencedor 🖤",
+            color=COR_ROSA,
+        ))
+
+    @commands.command(name="placar")
+    async def placar(self, ctx: commands.Context):
+        """Bônus: mostra o placar atual na hora, sem precisar ir no
+        canal fixo. Remove esse comando se não quiser."""
+        await ctx.send(embed=self._montar_embed_placar())
+
+
+# ══════════════════════════════════════════════════════════════════
 #  🦇  EVENTOS GLOBAIS
 # ══════════════════════════════════════════════════════════════════
 
@@ -1807,6 +2237,16 @@ async def vampy_help(ctx: commands.Context):
             "*(e de vez em quando eu apareço do nada sozinha!! 😈🦇)*"
         )
     )
+    embed.add_field(
+        name="🩸 Guerra das Bloodlines",
+        inline=False,
+        value=(
+            "`v!placar` — mostra o placar atual na hora\n"
+            "`v!nivel <1-5>` — (autorizados) responde um post de recrutamento pra nivelar\n"
+            "`v!reiniciar rank` — (Gerenciar Servidor) zera o placar\n"
+            "*(o placar fica sempre fixado no canal dele, se atualizando sozinho)*"
+        )
+    )
     embed.set_footer(text="🦇 Vampy Bot • prefixo: v! ou vampy ")
     await ctx.send(embed=embed)
 
@@ -1845,6 +2285,7 @@ async def vampy_info(ctx: commands.Context):
 async def _main():
     async with bot:
         await bot.add_cog(DialogoCog(bot))
+        await bot.add_cog(RankCog(bot))
         if not TOKEN:
             print("❌ ERRO: token não encontrado! Crie um .env com VAMPY_TOKEN=seu_token")
             return
