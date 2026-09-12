@@ -1129,7 +1129,7 @@ def _checar_gatilho_sangue_ordem(texto: str) -> bool:
 
 def _extrair_alvo_sangue_texto(message: discord.Message) -> str | None:
     """Tenta pegar o nome escrito em texto puro logo depois de
-    'sangue do/da/de' (ex: 'tome o sangue do Gold' -> 'Gold'), pra
+    'sangue do/da' (ex: 'tome o sangue do Gold' -> 'Gold'), pra
     usar na resposta mesmo quando ninguém foi @mencionado de
     verdade — esse tipo de pedido geralmente cita o nome sem marcar."""
     m = _PADRAO_ALVO_SANGUE_TEXTO.search(message.content)
@@ -1823,8 +1823,8 @@ RANK_AUTORIZADO_USER_ID = 1527740671027314752
 RANK_AUTORIZADO_CARGO_ID = 1530798097133998121
 
 # cargo -> bloodline (usado pra descobrir de quem é o post marcado)
-CARGO_STEFAN_ID = 1547741167314276393
-CARGO_DAMON_ID = 1547732494642847785
+CARGO_STEFAN_ID = 1523671706433093823
+CARGO_DAMON_ID = 1523671276122538045
 
 # nível (1 a 5) -> % aplicada na bloodline marcada no post
 NIVEL_PORCENTAGENS = {1: 5.0, 2: 7.5, 3: 10.0, 4: 12.5, 5: 15.0}
