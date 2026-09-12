@@ -1933,6 +1933,28 @@ def _autorizado_para_nivelar(autor: discord.abc.User) -> bool:
     return any(c.id == RANK_AUTORIZADO_CARGO_ID for c in getattr(autor, "roles", []))
 
 
+# padrão do nível (1 a 5) escrito em texto puro dentro do próprio post
+# de recrutamento (ex: "te dou ponto 1 @Stefan - Bloodline")
+_PADRAO_NIVEL_INLINE = re.compile(r"\b([1-5])\b")
+
+
+def _extrair_nivel_da_mensagem(message: discord.Message) -> int | None:
+    """Procura um número de 1 a 5 escrito em texto puro na própria
+    mensagem do post de recrutamento (ex: 'te dou ponto 1 @Stefan -
+    Bloodline'). Usado pra quem já tem o cargo autorizado (o mesmo
+    cargo que libera o comando v!nivel) dar o ponto DIRETO no próprio
+    post, sem precisar que ninguém responda depois com v!nivel.
+
+    Remove as @menções antes de procurar o número, pra não confundir
+    um dígito qualquer que apareça dentro do ID cru de uma menção
+    (ex: <@&1523671706433093823>) com o nível digitado de propósito."""
+    texto = re.sub(r"<@!?\d+>|<@&\d+>|<#\d+>", "", message.content)
+    m = _PADRAO_NIVEL_INLINE.search(texto)
+    if not m:
+        return None
+    return int(m.group(1))
+
+
 def _checagem_nivel():
     async def predicate(ctx: commands.Context) -> bool:
         return _autorizado_para_nivelar(ctx.author)
@@ -2150,7 +2172,49 @@ class RankCog(commands.Cog, name="VampyRank"):
 
         bloodlines = _extrair_bloodlines_mencionadas(message)
         if len(bloodlines) == 1 and _tem_justificativa(message):
-            return  # mensagem válida, não faz nada
+            # FEATURE: se quem postou já tem o cargo autorizado (o
+            # mesmo que libera v!nivel) e escreveu o número do nível
+            # (1 a 5) na própria mensagem, a Vampy aplica o ponto
+            # DIRETO nesse post — sem precisar que ninguém responda
+            # depois com v!nivel. Continua funcionando do jeito normal
+            # pra quem não é autorizado ou não escreveu o nível: nesse
+            # caso o post só fica válido e parado, esperando alguém
+            # autorizado nivelar depois (via v!nivel em reply)
+            if (
+                _autorizado_para_nivelar(message.author)
+                and str(message.id) not in self.db["posts_nivelados"]
+            ):
+                nivel_digitado = _extrair_nivel_da_mensagem(message)
+                if nivel_digitado is not None:
+                    bloodline = next(iter(bloodlines))
+                    pct_aplicado = NIVEL_PORCENTAGENS[nivel_digitado]
+                    novo_valor = await self._aplicar_nivel(bloodline, nivel_digitado)
+
+                    self.db["posts_nivelados"][str(message.id)] = {
+                        "nivel": nivel_digitado,
+                        "bloodline": bloodline,
+                        "pct_aplicado": pct_aplicado,
+                        "por": message.author.id,
+                        "em": datetime.now(timezone.utc).isoformat(),
+                    }
+                    self._salvar()
+
+                    nome = "Stefan" if bloodline == "stefan" else "Damon"
+                    try:
+                        await message.reply(
+                            embed=discord.Embed(
+                                title="🩸 Nivelado!!",
+                                description=(
+                                    f"+{pct_aplicado}% pra **{nome}** (nível {nivel_digitado})\n"
+                                    f"total agora: **{novo_valor:.1f}%**"
+                                ),
+                                color=COR_VERDE,
+                            ),
+                            mention_author=False,
+                        )
+                    except discord.HTTPException:
+                        pass
+            return  # mensagem válida, não faz mais nada
 
         if len(bloodlines) == 0:
             motivo = "faltou marcar @Stefan ou @Damon nessa mensagem!!"
