@@ -1869,6 +1869,22 @@ def _eh_ticket_de_recrutamento(message: discord.Message) -> bool:
     return False
 
 
+def _extrair_id_autor_ticket(message: discord.Message) -> int | None:
+    """Pega o ID de quem abriu o ticket a partir do próprio embed que
+    o bot de tickets manda — a descrição sempre cita quem criou o
+    ticket (ex: '<@123456789012345678> criou um novo ticket 🎫 **Abra
+    um ticket e aguarde**.'). Usado pra Vampy marcar a pessoa certa
+    na fichinha, em vez de marcar algum dos cargos de staff que também
+    aparecem pingados na mensagem do bot de tickets."""
+    for embed in message.embeds:
+        if not embed.description:
+            continue
+        m = re.search(r"<@!?(\d+)>", embed.description)
+        if m:
+            return int(m.group(1))
+    return None
+
+
 class TicketRecrutamentoCog(commands.Cog, name="VampyTicketRecrutamento"):
     """🩸 Manda a fichinha de recrutamento da LSV assim que um ticket
     do tipo 'Abra um ticket e aguarde' é aberto pelo bot de tickets."""
@@ -1890,13 +1906,15 @@ class TicketRecrutamentoCog(commands.Cog, name="VampyTicketRecrutamento"):
             return
         self._tickets_processados.append(message.id)
 
-        async with message.channel.typing():
-            await asyncio.sleep(random.uniform(1.0, 2.0))
-        await message.channel.send(random.choice(_FICHA_RECRUTAMENTO_INTRO))
+        autor_id = _extrair_id_autor_ticket(message)
+        mencao = f"<@{autor_id}> " if autor_id else ""
+
+        texto_intro = random.choice(_FICHA_RECRUTAMENTO_INTRO)
+        texto_completo = f"{mencao}{texto_intro}\n\n{_FICHA_RECRUTAMENTO_TEXTO}"
 
         async with message.channel.typing():
-            await asyncio.sleep(random.uniform(1.2, 2.2))
-        await message.channel.send(_FICHA_RECRUTAMENTO_TEXTO)
+            await asyncio.sleep(random.uniform(1.0, 2.0))
+        await message.channel.send(texto_completo)
 
 
 # ══════════════════════════════════════════════════════════════════
