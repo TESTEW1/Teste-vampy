@@ -1814,6 +1814,12 @@ TICKET_BOT_ID = 710034409214181396
 _TICKET_TITULO_ABERTO = "ticket aberto"
 _TICKET_MARCADOR_RECRUTAMENTO = "abra um ticket e aguarde"
 
+# marcador do botão de ticket "Parceiros" — mesma lógica do de
+# recrutamento acima, só muda o texto que aparece na descrição do
+# embed do bot de tickets (ex: "@fulano criou um novo ticket 🤝
+# **parceiros**.")
+_TICKET_MARCADOR_PARCERIA = "parceiros"
+
 _FICHA_RECRUTAMENTO_INTRO = [
     "*pousa animada no cantinho do ticket* oiii, seja bem-vindo(a)!! 🦇🖤 pra você virar um(a) de nós, preciso que preencha essa fichinha certinha aqui embaixo, tá?? 🩸✨",
     "*bate as asinhas de leve* que bom te ver por aqui!! 🦇💜 pra entrar pra LSV é só preencher a fichinha logo abaixo, com calma 🩸",
@@ -1869,6 +1875,21 @@ def _eh_ticket_de_recrutamento(message: discord.Message) -> bool:
     return False
 
 
+def _eh_ticket_de_parceria(message: discord.Message) -> bool:
+    """Mesma lógica de `_eh_ticket_de_recrutamento`, só que pro botão
+    de ticket 'Parceiros' — usada pra saber quando a Vampy deve
+    perguntar que tipo de parceria a pessoa quer fazer (mapas/servers
+    ou clã/aliança de sangue)."""
+    if message.author.id != TICKET_BOT_ID:
+        return False
+    for embed in message.embeds:
+        titulo = (embed.title or "").lower()
+        descricao = (embed.description or "").lower()
+        if _TICKET_TITULO_ABERTO in titulo and _TICKET_MARCADOR_PARCERIA in descricao:
+            return True
+    return False
+
+
 def _extrair_id_autor_ticket(message: discord.Message) -> int | None:
     """Pega o ID de quem abriu o ticket a partir do próprio embed que
     o bot de tickets manda — a descrição sempre cita quem criou o
@@ -1885,27 +1906,209 @@ def _extrair_id_autor_ticket(message: discord.Message) -> int | None:
     return None
 
 
+# ══════════════════════════════════════════════════════════════════
+#  🤝  FICHAS DE PARCERIA — ticket "Parceiros"
+# ══════════════════════════════════════════════════════════════════
+# Sempre que o bot de tickets abre um ticket do botão "Parceiros", a
+# Vampy pergunta que TIPO de parceria a pessoa quer fazer através de
+# um menu de seleção (dropdown) — em vez de mandar a fichinha direto,
+# porque existem dois modelos diferentes:
+#
+#   • "mapas"  -> parceria entre mapas/servidores (Mapas & Serves)
+#   • "cla"    -> aliança/pacto entre clãs (Diário da Aliança Sangrenta)
+#
+# Assim que a pessoa escolhe uma opção no menu, a Vampy manda a ficha
+# correspondente no canal e desativa o menu (pra não deixar escolher
+# de novo no mesmo ticket).
+
+_TICKET_MARCADOR_PARCERIA_INTRO = [
+    "*pousa curiosa no cantinho do ticket* oii, seja bem-vindo(a)!! 🦇🖤 antes de mais nada, me conta: que tipo de parceria você quer fazer? escolhe aí embaixo 🩸✨",
+    "*bate as asinhas animada* que bom te ver por aqui!! 🦇💜 pra eu te mandar a fichinha certa, escolhe o tipo de parceria no menu abaixo 🩸",
+    "*se pendura pertinho, curiosa* aaah, um pedido de parceria!! 🦇✨ me diz primeiro: é parceria de mapas/servers ou aliança de clã? escolhe abaixo 🩸🖤",
+    "*sorri mostrando as presinhas* oii!! 🦇💜 pra seguir com a parceria, só escolher o tipo certinho no menu logo abaixo 🩸",
+    "*voa em círculos animada* mais um pedido de parceria!! 🦇✨ escolhe aí embaixo que tipo você quer fazer 🩸🖤",
+]
+
+_FICHA_PARCERIA_MAPAS = """🩸 𝐅𝐈𝐂𝐇𝐀 𝐃𝐄 𝐏𝐀𝐑𝐂𝐄𝐑𝐈𝐀 𝐌𝐀𝐏𝐀𝐒 & 𝐒𝐄𝐑𝐕𝐄𝐒 🦇
+
+"Somente reinos dignos atravessam os portões da noite…"
+
+╔════════════════════╗
+
+🕯️ 𝐑𝐄𝐐𝐔𝐈𝐒𝐈𝐓𝐎𝐒 𝐃𝐎 𝐏𝐀𝐂𝐓𝐎
+
+🩸 Divulgação obrigatória entre parceiros.
+🩸 Mapas autorais e bem organizados.
+
+━━━━━━━━━━━━━━━
+
+🦇 𝐁𝐄𝐍𝐄𝐅𝐈́𝐂𝐈𝐎𝐒 𝐃𝐀 𝐀𝐋𝐈𝐀𝐍𝐂̧𝐀
+
+🕸️ Divulgação de mapas e servidores.
+🕸️ Apoio entre comunidades parceiras.
+🕸️ Espaço fixo para crescimento do seu reino.
+🕸️ União eterna sob a lua vermelha.
+
+━━━━━━━━━━━━━━━
+
+🩸 𝐅𝐈𝐂𝐇𝐀 𝐃𝐎 𝐏𝐀𝐂𝐓𝐎 🦇
+
+🕯️ 𝐍𝐨𝐦𝐞 𝐝𝐨 𝐒𝐞𝐫𝐯𝐞𝐫 / 𝐌𝐚𝐩𝐚:
+
+🩸 𝐓𝐚𝐠:
+
+🦇 𝐄𝐦𝐨𝐣𝐢 𝐪𝐮𝐞 𝐫𝐞𝐩𝐫𝐞𝐬𝐞𝐧𝐭𝐚:
+
+👑 𝐍𝐨𝐦𝐞 𝐝𝐨𝐬 𝐋𝐢́𝐝𝐞𝐫𝐞𝐬 / 𝐃𝐨𝐧𝐨𝐬:
+
+🕸️ 𝐓𝐞𝐦𝐚 𝐝𝐨 𝐒𝐞𝐫𝐯𝐞𝐫 / 𝐌𝐚𝐩𝐚:
+
+🩸 𝐐𝐮𝐚𝐧𝐭𝐢𝐝𝐚𝐝𝐞 𝐝𝐞 𝐌𝐞𝐦𝐛𝐫𝐨𝐬:
+
+🥀 𝐀𝐜𝐞𝐢𝐭𝐚 𝐬𝐞𝐥𝐚𝐫 𝐨 𝐩𝐚𝐜𝐭𝐨 𝐜𝐨𝐦 𝐚 𝐋𝐒𝐕 𝐩𝐞𝐥𝐚 𝐞𝐭𝐞𝐫𝐧𝐢𝐝𝐚𝐝𝐞?
+☾ ( ) 𝐒𝐢𝐦  ☾ ( ) 𝐍𝐚̃𝐨
+
+╚════════════════════╝
+
+🩸 "Que os morcegos espalhem o nome desta aliança pela eternidade…" 🦇"""
+
+_FICHA_PARCERIA_CLA = """🩸 𝐃𝐢𝐚́𝐫𝐢𝐨 𝐝𝐚 𝐀𝐥𝐢𝐚𝐧𝐜̧𝐚 𝐒𝐚𝐧𝐠𝐫𝐞𝐧𝐭𝐚 🦇
+
+"Somente clãs dignos atravessam os portões da noite…"
+
+🥀 𝐁𝐞𝐧𝐞𝐟𝐢́𝐜𝐢𝐨𝐬 𝐝𝐚 𝐚𝐥𝐢𝐚𝐧𝐜̧𝐚:
+
+🕸️ Apoio entre clãs aliados.
+🕸️ Eventos e invasões em conjunto.
+🕸️ União eterna sob a lua vermelha.
+
+╔════════════════════╗
+🕯️ 𝐍𝐨𝐦𝐞 𝐝𝐨 𝐂𝐥𝐚̃:
+
+🩸 𝐓𝐚𝐠:
+
+🦇 𝐄𝐦𝐨𝐣𝐢 𝐝𝐨 𝐂𝐥𝐚̃:
+
+👑 𝐋𝐨𝐫𝐝𝐞𝐬 / 𝐋𝐢́𝐝𝐞𝐫𝐞𝐬 𝐪𝐮𝐞 𝐜𝐚𝐦𝐢𝐧𝐡𝐚𝐫𝐚̃𝐨 𝐞𝐦 𝐧𝐨𝐬𝐬𝐨 𝐜𝐚𝐬𝐭𝐞𝐥𝐨:
+
+🕸️ 𝐂𝐨𝐫 𝐪𝐮𝐞 𝐫𝐞𝐩𝐫𝐞𝐬𝐞𝐧𝐭𝐚 𝐨 𝐬𝐞𝐮 𝐥𝐞𝐠𝐚𝐝𝐨 𝐧𝐚 𝐞𝐭𝐞𝐫𝐧𝐢𝐝𝐚𝐝𝐞:
+
+🥀 𝐀 𝐬𝐮𝐚 𝐨𝐫𝐝𝐞𝐦 𝐚𝐜𝐞𝐢𝐭𝐚 𝐨 𝐩𝐚𝐜𝐭𝐨 𝐞𝐭𝐞𝐫𝐧𝐨 𝐜𝐨𝐦 𝐚 𝐋𝐒𝐕?
+☾ ( ) 𝐒𝐢𝐦  ☾ ( ) 𝐍𝐚̃𝐨
+
+╚════════════════════╝
+
+👑 𝐂𝐚𝐬𝐨 𝐚𝐜𝐞𝐢𝐭𝐞 𝐨 𝐩𝐚𝐜𝐭𝐨, 𝐩𝐫𝐞𝐞𝐧𝐜𝐡𝐚 𝐚 𝐟𝐢𝐜𝐡𝐚 𝐞 𝐚𝐠𝐮𝐚𝐫𝐝𝐞 𝐨 𝐜𝐡𝐚𝐦𝐚𝐝𝐨 𝐝𝐨𝐬 𝐥𝐨𝐫𝐝𝐞𝐬.
+
+╚════════════════════╝
+
+🦇 "O sangue sela alianças que nem a morte desfaz…" 🩸"""
+
+# tipo (value do select) -> texto da ficha correspondente
+_FICHAS_PARCERIA = {
+    "mapas": _FICHA_PARCERIA_MAPAS,
+    "cla": _FICHA_PARCERIA_CLA,
+}
+
+
+class _MenuTipoParceria(discord.ui.Select):
+    """Dropdown com as duas opções de parceria. Guarda o ID de quem
+    abriu o ticket pra só deixar essa pessoa escolher — qualquer outra
+    pessoa que clicar recebe um aviso discreto (ephemeral) e nada
+    acontece."""
+
+    def __init__(self, autor_id: int | None):
+        self.autor_id = autor_id
+        opcoes = [
+            discord.SelectOption(
+                label="Mapas & Serves",
+                value="mapas",
+                description="parceria/divulgação entre mapas e servidores",
+                emoji="🗺️",
+            ),
+            discord.SelectOption(
+                label="Clã / Aliança Sangrenta",
+                value="cla",
+                description="pacto/aliança entre clãs",
+                emoji="🩸",
+            ),
+        ]
+        super().__init__(
+            placeholder="escolha o tipo de parceria...",
+            min_values=1,
+            max_values=1,
+            options=opcoes,
+            custom_id="vampy_menu_tipo_parceria",
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        # só quem abriu o ticket pode escolher (quando dá pra saber
+        # quem foi) — outra pessoa clicando recebe um aviso só pra ela
+        if self.autor_id is not None and interaction.user.id != self.autor_id:
+            await interaction.response.send_message(
+                "esse ticket não é seu, só quem abriu pode escolher aqui 🦇",
+                ephemeral=True,
+            )
+            return
+
+        ficha = _FICHAS_PARCERIA[self.values[0]]
+
+        # desativa o menu pra não dar pra escolher de novo nesse ticket
+        self.disabled = True
+        for item in self.view.children:
+            item.disabled = True
+        try:
+            await interaction.response.edit_message(view=self.view)
+        except discord.HTTPException:
+            pass
+
+        await interaction.channel.send(ficha)
+
+
+class SelecaoTipoParceriaView(discord.ui.View):
+    """View com o menu de escolha do tipo de parceria. Fica ativa
+    indefinidamente (sem timeout) — o ticket não expira sozinho, então
+    o menu deve continuar funcionando até alguém escolher."""
+
+    def __init__(self, autor_id: int | None):
+        super().__init__(timeout=None)
+        self.add_item(_MenuTipoParceria(autor_id))
+
+
 class TicketRecrutamentoCog(commands.Cog, name="VampyTicketRecrutamento"):
     """🩸 Manda a fichinha de recrutamento da LSV assim que um ticket
-    do tipo 'Abra um ticket e aguarde' é aberto pelo bot de tickets."""
+    do tipo 'Abra um ticket e aguarde' é aberto pelo bot de tickets, e
+    pergunta o tipo de parceria (mapas/servers ou clã) assim que um
+    ticket do tipo 'Parceiros' é aberto."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         # guarda os IDs das mensagens de "Ticket Aberto" já
-        # processadas, pra nunca mandar a fichinha duas vezes no
-        # mesmo ticket (ex: se o Discord entregar o evento duplicado)
+        # processadas, pra nunca mandar a fichinha (ou a pergunta de
+        # parceria) duas vezes no mesmo ticket (ex: se o Discord
+        # entregar o evento duplicado)
         self._tickets_processados: deque[int] = deque(maxlen=500)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if not message.guild:
             return
-        if not _eh_ticket_de_recrutamento(message):
-            return
-        if message.id in self._tickets_processados:
-            return
-        self._tickets_processados.append(message.id)
 
+        if _eh_ticket_de_recrutamento(message):
+            if message.id in self._tickets_processados:
+                return
+            self._tickets_processados.append(message.id)
+            await self._enviar_ficha_recrutamento(message)
+            return
+
+        if _eh_ticket_de_parceria(message):
+            if message.id in self._tickets_processados:
+                return
+            self._tickets_processados.append(message.id)
+            await self._perguntar_tipo_parceria(message)
+            return
+
+    async def _enviar_ficha_recrutamento(self, message: discord.Message):
         autor_id = _extrair_id_autor_ticket(message)
         mencao = f"<@{autor_id}> " if autor_id else ""
 
@@ -1915,6 +2118,17 @@ class TicketRecrutamentoCog(commands.Cog, name="VampyTicketRecrutamento"):
         async with message.channel.typing():
             await asyncio.sleep(random.uniform(1.0, 2.0))
         await message.channel.send(texto_completo)
+
+    async def _perguntar_tipo_parceria(self, message: discord.Message):
+        autor_id = _extrair_id_autor_ticket(message)
+        mencao = f"<@{autor_id}> " if autor_id else ""
+
+        texto_intro = random.choice(_TICKET_MARCADOR_PARCERIA_INTRO)
+        texto_completo = f"{mencao}{texto_intro}"
+
+        async with message.channel.typing():
+            await asyncio.sleep(random.uniform(1.0, 2.0))
+        await message.channel.send(texto_completo, view=SelecaoTipoParceriaView(autor_id))
 
 
 # ══════════════════════════════════════════════════════════════════
