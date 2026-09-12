@@ -1793,6 +1793,113 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
 
 
 # ══════════════════════════════════════════════════════════════════
+#  🩸  FICHA DE RECRUTAMENTO — enviada automaticamente em tickets
+# ══════════════════════════════════════════════════════════════════
+# Sempre que o bot de tickets (TICKET_BOT_ID, o "Ticket King") abre um
+# ticket, ele manda nesse canal um embed próprio dele — título "Ticket
+# Aberto" e uma descrição do tipo "@fulano criou um novo ticket 🎫
+# **Abra um ticket e aguarde**." (ou "**Suporte**." / "**Denuncia**.").
+#
+# Como os três tipos de ticket caem no mesmo padrão de canal/categoria,
+# a única forma confiável de saber qual botão foi usado é olhando o
+# CONTEÚDO desse embed — por isso a checagem é só título + descrição,
+# sem depender de nome de canal ou categoria.
+#
+# Quando é especificamente o ticket "Abra um ticket e aguarde" (o de
+# recrutamento pra virar membro da LSV), a Vampy manda, fofa, pedindo
+# pra pessoa preencher a fichinha de recrutamento.
+
+TICKET_BOT_ID = 710034409214181396
+
+_TICKET_TITULO_ABERTO = "ticket aberto"
+_TICKET_MARCADOR_RECRUTAMENTO = "abra um ticket e aguarde"
+
+_FICHA_RECRUTAMENTO_INTRO = [
+    "*pousa animada no cantinho do ticket* oiii, seja bem-vindo(a)!! 🦇🖤 pra você virar um(a) de nós, preciso que preencha essa fichinha certinha aqui embaixo, tá?? 🩸✨",
+    "*bate as asinhas de leve* que bom te ver por aqui!! 🦇💜 pra entrar pra LSV é só preencher a fichinha logo abaixo, com calma 🩸",
+    "*se pendura pertinho, curiosa* aaah, mais um(a) querendo entrar pro clã!! 🦇✨ preenche essa fichinha aqui embaixo pra eu te conhecer direitinho 🩸🖤",
+    "*sorri mostrando as presinhas* seja bem-vindo(a) ao ninho!! 🦇💜 só precisa preencher a fichinha logo abaixo pra gente seguir com o recrutamento 🩸",
+    "*voa em círculos animada* que alegria, mais um pedido de entrada!! 🦇✨ preenche a fichinha aqui embaixo direitinho, sim?? 🩸🖤",
+]
+
+_FICHA_RECRUTAMENTO_TEXTO = """╭────────── 🩸 ──────────╮
+✒️ 𝐃𝐈𝐀́𝐑𝐈𝐎 𝐃𝐎 𝐍𝐎𝐕𝐎 𝐌𝐄𝐌𝐁𝐑𝐎
+╰────────── 🦇 ──────────╯
+
+🦇 𝐃𝐢𝐬𝐜𝐨𝐫𝐝:
+🩸 𝐍𝐨𝐦𝐞 𝐧𝐨 𝐑𝐨𝐛𝐥𝐨𝐱:
+💔 𝐈𝐝𝐚𝐝𝐞:
+⏳ 𝐓𝐞𝐦𝐩𝐨 𝐧𝐨 𝐑𝐨𝐛𝐥𝐨𝐱:
+🍷 𝐐𝐮𝐚𝐥 𝐒𝐚𝐥𝐯𝐚𝐭𝐨𝐫𝐞 𝐭𝐞 𝐫𝐞𝐜𝐫𝐮𝐭𝐨𝐮?
+
+🥀 𝐇𝐢𝐬𝐭𝐨́𝐫𝐢𝐚 𝐧𝐨𝐬 𝐜𝐥𝐚̃𝐬
+🩸 𝐃𝐞 𝐪𝐮𝐚𝐥(𝐢𝐬) 𝐜𝐥𝐚̃(𝐬) 𝐯𝐨𝐜𝐞̂ 𝐣𝐚́ 𝐟𝐞𝐳 𝐩𝐚𝐫𝐭𝐞?
+
+«𝐑𝐞𝐬𝐩𝐨𝐬𝐭𝐚:»
+
+╭──────── ⚜️ ────────╮
+𝐋𝐈𝐍𝐇𝐀𝐆𝐄𝐌 𝐄𝐒𝐂𝐎𝐋𝐇𝐈𝐃𝐀
+╰──────── ⚜️ ────────╯
+
+🩸 ( ) 𝐃𝐚𝐦𝐨𝐧
+🦇 ( ) 𝐒𝐭𝐞𝐟𝐚𝐧
+
+🥀 𝐀𝐜𝐞𝐢𝐭𝐚 𝐜𝐚𝐫𝐫𝐞𝐠𝐚𝐫 𝐚 𝐦𝐚𝐫𝐜𝐚 𝐋𝐒𝐕?
+🩸 ( ) 𝐒𝐢𝐦
+🦇 ( ) 𝐍𝐚̃𝐨
+
+𝐀𝐠𝐨𝐫𝐚 𝐬𝐞𝐮 𝐧𝐨𝐦𝐞 𝐞𝐬𝐭𝐚́
+𝐠𝐫𝐚𝐯𝐚𝐝𝐨 𝐧𝐚 𝐞𝐭𝐞𝐫𝐧𝐢𝐝𝐚𝐝𝐞.
+ 𝐕𝐨𝐜𝐞̂ 𝐞́ 𝐮𝐦 𝐝𝐞 𝐧𝐨́𝐬."""
+
+
+def _eh_ticket_de_recrutamento(message: discord.Message) -> bool:
+    """Verifica se essa mensagem é o aviso de 'Ticket Aberto' mandado
+    pelo bot de tickets (Ticket King) especificamente pro botão 'Abra
+    um ticket e aguarde' — e não Suporte/Denúncia. A identificação é
+    só pelo CONTEÚDO do embed que ele manda (título + descrição), já
+    que os três tipos de ticket caem no mesmo padrão de canal/nome."""
+    if message.author.id != TICKET_BOT_ID:
+        return False
+    for embed in message.embeds:
+        titulo = (embed.title or "").lower()
+        descricao = (embed.description or "").lower()
+        if _TICKET_TITULO_ABERTO in titulo and _TICKET_MARCADOR_RECRUTAMENTO in descricao:
+            return True
+    return False
+
+
+class TicketRecrutamentoCog(commands.Cog, name="VampyTicketRecrutamento"):
+    """🩸 Manda a fichinha de recrutamento da LSV assim que um ticket
+    do tipo 'Abra um ticket e aguarde' é aberto pelo bot de tickets."""
+
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        # guarda os IDs das mensagens de "Ticket Aberto" já
+        # processadas, pra nunca mandar a fichinha duas vezes no
+        # mesmo ticket (ex: se o Discord entregar o evento duplicado)
+        self._tickets_processados: deque[int] = deque(maxlen=500)
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if not message.guild:
+            return
+        if not _eh_ticket_de_recrutamento(message):
+            return
+        if message.id in self._tickets_processados:
+            return
+        self._tickets_processados.append(message.id)
+
+        async with message.channel.typing():
+            await asyncio.sleep(random.uniform(1.0, 2.0))
+        await message.channel.send(random.choice(_FICHA_RECRUTAMENTO_INTRO))
+
+        async with message.channel.typing():
+            await asyncio.sleep(random.uniform(1.2, 2.2))
+        await message.channel.send(_FICHA_RECRUTAMENTO_TEXTO)
+
+
+# ══════════════════════════════════════════════════════════════════
 #  🩸  RANK DAS BLOODLINES — placar + canal de recrutamento
 # ══════════════════════════════════════════════════════════════════
 # Duas "bloodlines" (Stefan e Damon) competem pra bater 100% primeiro.
@@ -2487,6 +2594,7 @@ async def _main():
     async with bot:
         await bot.add_cog(DialogoCog(bot))
         await bot.add_cog(RankCog(bot))
+        await bot.add_cog(TicketRecrutamentoCog(bot))
         if not TOKEN:
             print("❌ ERRO: token não encontrado! Crie um .env com VAMPY_TOKEN=seu_token")
             return
