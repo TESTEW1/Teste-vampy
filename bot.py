@@ -1615,8 +1615,8 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
         # ex: "Vampy tome o sangue do Gold", "morde o Fulano" — reage
         # na hora, sem cooldown. Se citar/marcar alguém (@menção de
         # verdade) usa o nome de quem foi marcado; senão tenta pegar o
-        # nome escrito em texto puro depois de "sangue do/da" (ex:
-        # "Gold"); se não achar nada, usa uma resposta genérica
+        # nome escrito em texto puro depois de "sangue do/da"; se não
+        # achar nada, usa uma resposta genérica
         if _checar_gatilho_sangue_ordem(message.content):
             self._ultimo_resp[message.channel.id] = datetime.now(timezone.utc)
             alvo = _extrair_alvo_mencao(message, self.bot.user) or _extrair_alvo_sangue_texto(message)
@@ -1797,28 +1797,36 @@ class DialogoCog(commands.Cog, name="VampyDialogo"):
 # ══════════════════════════════════════════════════════════════════
 # Sempre que o bot de tickets (TICKET_BOT_ID, o "Ticket King") abre um
 # ticket, ele manda nesse canal um embed próprio dele — título "Ticket
-# Aberto" e uma descrição do tipo "@fulano criou um novo ticket 🎫
-# **Abra um ticket e aguarde**." (ou "**Suporte**." / "**Denuncia**.").
+# Aberto" e uma descrição do tipo "@fulano criou um novo ticket 🦇
+# **Virar membro**." (ou "**Suporte**." / "**Denuncia**.").
 #
 # Como os três tipos de ticket caem no mesmo padrão de canal/categoria,
 # a única forma confiável de saber qual botão foi usado é olhando o
 # CONTEÚDO desse embed — por isso a checagem é só título + descrição,
 # sem depender de nome de canal ou categoria.
 #
-# Quando é especificamente o ticket "Abra um ticket e aguarde" (o de
-# recrutamento pra virar membro da LSV), a Vampy manda, fofa, pedindo
-# pra pessoa preencher a fichinha de recrutamento.
+# Quando é especificamente o ticket "Virar membro" (o de recrutamento
+# pra virar membro da LSV), a Vampy manda, fofa, pedindo pra pessoa
+# preencher a fichinha de recrutamento.
+#
+# ATUALIZAÇÃO: o botão de ticket que antes se chamava "Abra um ticket
+# e aguarde" foi renomeado pelo servidor pra "Virar membro" — o
+# marcador abaixo foi ajustado pra acompanhar essa mudança.
 
 TICKET_BOT_ID = 710034409214181396
 
 _TICKET_TITULO_ABERTO = "ticket aberto"
-_TICKET_MARCADOR_RECRUTAMENTO = "abra um ticket e aguarde"
+_TICKET_MARCADOR_RECRUTAMENTO = "virar membro"
 
-# marcador do botão de ticket "Parceiros" — mesma lógica do de
+# marcador do botão de ticket "Parcerias" — mesma lógica do de
 # recrutamento acima, só muda o texto que aparece na descrição do
 # embed do bot de tickets (ex: "@fulano criou um novo ticket 🤝
-# **parceiros**.")
-_TICKET_MARCADOR_PARCERIA = "parceiros"
+# **Parcerias**.").
+#
+# ATUALIZAÇÃO: o botão que antes se chamava "Parceiros" foi renomeado
+# pelo servidor pra "Parcerias" — o marcador abaixo foi ajustado pra
+# acompanhar essa mudança.
+_TICKET_MARCADOR_PARCERIA = "parcerias"
 
 _FICHA_RECRUTAMENTO_INTRO = [
     "*pousa animada no cantinho do ticket* oiii, seja bem-vindo(a)!! 🦇🖤 pra você virar um(a) de nós, preciso que preencha essa fichinha certinha aqui embaixo, tá?? 🩸✨",
@@ -1861,10 +1869,10 @@ _FICHA_RECRUTAMENTO_TEXTO = """╭────────── 🩸 ───�
 
 def _eh_ticket_de_recrutamento(message: discord.Message) -> bool:
     """Verifica se essa mensagem é o aviso de 'Ticket Aberto' mandado
-    pelo bot de tickets (Ticket King) especificamente pro botão 'Abra
-    um ticket e aguarde' — e não Suporte/Denúncia. A identificação é
-    só pelo CONTEÚDO do embed que ele manda (título + descrição), já
-    que os três tipos de ticket caem no mesmo padrão de canal/nome."""
+    pelo bot de tickets (Ticket King) especificamente pro botão 'Virar
+    membro' — e não Suporte/Denúncia. A identificação é só pelo
+    CONTEÚDO do embed que ele manda (título + descrição), já que os
+    três tipos de ticket caem no mesmo padrão de canal/nome."""
     if message.author.id != TICKET_BOT_ID:
         return False
     for embed in message.embeds:
@@ -1877,7 +1885,7 @@ def _eh_ticket_de_recrutamento(message: discord.Message) -> bool:
 
 def _eh_ticket_de_parceria(message: discord.Message) -> bool:
     """Mesma lógica de `_eh_ticket_de_recrutamento`, só que pro botão
-    de ticket 'Parceiros' — usada pra saber quando a Vampy deve
+    de ticket 'Parcerias' — usada pra saber quando a Vampy deve
     perguntar que tipo de parceria a pessoa quer fazer (mapas/servers
     ou clã/aliança de sangue)."""
     if message.author.id != TICKET_BOT_ID:
@@ -1893,10 +1901,10 @@ def _eh_ticket_de_parceria(message: discord.Message) -> bool:
 def _extrair_id_autor_ticket(message: discord.Message) -> int | None:
     """Pega o ID de quem abriu o ticket a partir do próprio embed que
     o bot de tickets manda — a descrição sempre cita quem criou o
-    ticket (ex: '<@123456789012345678> criou um novo ticket 🎫 **Abra
-    um ticket e aguarde**.'). Usado pra Vampy marcar a pessoa certa
-    na fichinha, em vez de marcar algum dos cargos de staff que também
-    aparecem pingados na mensagem do bot de tickets."""
+    ticket (ex: '<@123456789012345678> criou um novo ticket 🦇 **Virar
+    membro**.'). Usado pra Vampy marcar a pessoa certa na fichinha, em
+    vez de marcar algum dos cargos de staff que também aparecem
+    pingados na mensagem do bot de tickets."""
     for embed in message.embeds:
         if not embed.description:
             continue
@@ -1907,9 +1915,9 @@ def _extrair_id_autor_ticket(message: discord.Message) -> int | None:
 
 
 # ══════════════════════════════════════════════════════════════════
-#  🤝  FICHAS DE PARCERIA — ticket "Parceiros"
+#  🤝  FICHAS DE PARCERIA — ticket "Parcerias"
 # ══════════════════════════════════════════════════════════════════
-# Sempre que o bot de tickets abre um ticket do botão "Parceiros", a
+# Sempre que o bot de tickets abre um ticket do botão "Parcerias", a
 # Vampy pergunta que TIPO de parceria a pessoa quer fazer através de
 # um menu de seleção (dropdown) — em vez de mandar a fichinha direto,
 # porque existem dois modelos diferentes:
@@ -2077,9 +2085,9 @@ class SelecaoTipoParceriaView(discord.ui.View):
 
 class TicketRecrutamentoCog(commands.Cog, name="VampyTicketRecrutamento"):
     """🩸 Manda a fichinha de recrutamento da LSV assim que um ticket
-    do tipo 'Abra um ticket e aguarde' é aberto pelo bot de tickets, e
-    pergunta o tipo de parceria (mapas/servers ou clã) assim que um
-    ticket do tipo 'Parceiros' é aberto."""
+    do tipo 'Virar membro' é aberto pelo bot de tickets, e pergunta o
+    tipo de parceria (mapas/servers ou clã) assim que um ticket do
+    tipo 'Parcerias' é aberto."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
